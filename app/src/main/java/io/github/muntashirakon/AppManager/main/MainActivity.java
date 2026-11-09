@@ -572,7 +572,7 @@ public class MainActivity extends BaseActivity implements SwipeRefreshLayout.OnR
         WindowInsetsCompat insets = ViewCompat.getRootWindowInsets(getWindow().getDecorView());
         mImsVisibleBeforeLeave = insets != null && insets.isVisible(WindowInsetsCompat.Type.ime());
         View focusedView = getCurrentFocus();
-        if (focusedView instanceof SearchView.SearchAutoComplete) {
+        if (focusedView != null && mSearchView != null && mSearchView.hasFocus()) {
             focusedView.clearFocus();
         }
         super.onPause();
