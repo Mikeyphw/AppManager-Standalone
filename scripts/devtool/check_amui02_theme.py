@@ -26,8 +26,16 @@ def check(root: Path):
     day, night, appearance, wf = [read(x) for x in (DAY,NIGHT,APPEARANCE,WF)]
     for text in (day, night, read(SPLASH)):
         ET.fromstring(text)
-    assert 'name="ThemeOverlay.AppTheme.PureBlackRoot"' in day
-    assert 'name="ThemeOverlay.AppTheme.PureBlackRoot"' in night
+    # HF02: Dotted Android style names implicitly inherit their prefix unless
+    # parent is explicit. The old declarations made AAPT look for nonexistent
+    # style/ThemeOverlay.AppTheme, breaking all Gradle and emulator jobs.
+    for label, xml_text in (('day', day), ('night', night)):
+        overlays = [node for node in ET.fromstring(xml_text).findall('style')
+                    if node.get('name') == 'ThemeOverlay.AppTheme.PureBlackRoot']
+        assert len(overlays) == 1, f'AMUI02_HF02: {label} pure-black overlay missing/duplicated'
+        assert overlays[0].get('parent') == '', (
+            f'AMUI02_HF02: {label} overlay must specify parent="" to prevent '
+            'implicit ThemeOverlay.AppTheme inheritance and AAPT linking failure')
     assert '<item name="colorSurface">@android:color/black</item>' not in night, 'black must never replace M3 surface roles'
     assert night.count('<item name="android:colorBackground">@android:color/black</item>') >= 2
     assert '<item name="android:windowBackground">@android:color/black</item>' in night

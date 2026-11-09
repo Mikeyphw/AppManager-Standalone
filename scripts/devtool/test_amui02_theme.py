@@ -16,8 +16,8 @@ class ThemeSourceContracts(unittest.TestCase):
         def put(p, text):
             f=self.root/p; f.parent.mkdir(parents=True,exist_ok=True); f.write_text(text)
         self.put=put
-        self.put('libcore/ui/src/main/res/values/styles.xml','<resources><style name="ThemeOverlay.AppTheme.PureBlackRoot" /></resources>')
-        self.put('libcore/ui/src/main/res/values-night/styles.xml','<resources><style name="ThemeOverlay.AppTheme.PureBlackRoot"><item name="android:colorBackground">@android:color/black</item></style><style name="AppTheme.Black"><item name="android:colorBackground">@android:color/black</item><item name="android:windowBackground">@android:color/black</item></style></resources>')
+        self.put('libcore/ui/src/main/res/values/styles.xml','<resources><style name="ThemeOverlay.AppTheme.PureBlackRoot" parent="" /></resources>')
+        self.put('libcore/ui/src/main/res/values-night/styles.xml','<resources><style name="ThemeOverlay.AppTheme.PureBlackRoot" parent=""><item name="android:colorBackground">@android:color/black</item></style><style name="AppTheme.Black"><item name="android:colorBackground">@android:color/black</item><item name="android:windowBackground">@android:color/black</item></style></resources>')
         self.put('app/src/main/res/values-night/styles.xml','<resources><style name="AppTheme.Splash.Black"><item name="windowSplashScreenBackground">@android:color/black</item></style></resources>')
         appearance=('DynamicColors.wrapContextIfAvailable(newCtx) applyPureBlackBackground(themedContext, transparent)\n')*2
         appearance += ('DynamicColors.applyToActivityIfAvailable(activity);\n boolean transparent = false;\napplyPureBlackBackground(activity, transparent);\n'
@@ -39,6 +39,31 @@ class ThemeSourceContracts(unittest.TestCase):
             self.put(f'app/src/main/res/layout/activity_{n}.xml', '<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:background="?android:attr/colorBackground"/>')
     def tearDown(self): self._temp.cleanup()
     def test_positive(self): check(self.root)
+    def test_hf02_reject_day_implicit_style_parent(self):
+        p=self.root/'libcore/ui/src/main/res/values/styles.xml'
+        p.write_text(p.read_text().replace('parent=""', '', 1))
+        with self.assertRaisesRegex(AssertionError, 'parent='):
+            check(self.root)
+
+    def test_hf02_reject_night_implicit_style_parent(self):
+        p=self.root/'libcore/ui/src/main/res/values-night/styles.xml'
+        p.write_text(p.read_text().replace('parent=""', '', 1))
+        with self.assertRaisesRegex(AssertionError, 'parent='):
+            check(self.root)
+
+    def test_hf02_reject_accidental_inherited_material_palette(self):
+        p=self.root/'libcore/ui/src/main/res/values-night/styles.xml'
+        p.write_text(p.read_text().replace('parent=""', 'parent="ThemeOverlay.AppTheme"', 1))
+        with self.assertRaisesRegex(AssertionError, 'parent='):
+            check(self.root)
+
+    def test_hf02_reject_duplicate_overlay(self):
+        p=self.root/'libcore/ui/src/main/res/values/styles.xml'
+        p.write_text(p.read_text().replace('</resources>',
+            '<style name="ThemeOverlay.AppTheme.PureBlackRoot" parent="" /></resources>'))
+        with self.assertRaisesRegex(AssertionError, 'missing/duplicated'):
+            check(self.root)
+
     def test_reject_surface_black(self):
         p=self.root/'libcore/ui/src/main/res/values-night/styles.xml'
         p.write_text(p.read_text().replace('</resources>','<item name="colorSurface">@android:color/black</item></resources>'))
