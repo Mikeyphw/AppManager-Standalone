@@ -182,7 +182,7 @@ public class BackupManagerTest {
     @Test
     public void testRestoreV4Default() throws BackupException {
         Prefs.Storage.setVolumePath(rscBackupPath.getUri().toString());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         RestoreOpOptions options = new RestoreOpOptions("dnsfilter.android", 0, null, 1110);
         bm.restore(options, null);
@@ -191,7 +191,7 @@ public class BackupManagerTest {
     @Test
     public void testRestoreV4DefaultBatchOps() throws BackupException {
         Prefs.Storage.setVolumePath(rscBackupPath.getUri().toString());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, null, null);
         bm.restore(options.getRestoreOpOptions("dnsfilter.android", 0), null);
@@ -208,7 +208,7 @@ public class BackupManagerTest {
     @Test
     public void testRestoreV4DefaultAsRelativeDirBatchOps() throws BackupException {
         Prefs.Storage.setVolumePath(rscBackupPath.getUri().toString());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, null, new String[]{"dnsfilter.android/0"});
         bm.restore(options.getRestoreOpOptions("dnsfilter.android", 0), null);
@@ -225,7 +225,7 @@ public class BackupManagerTest {
     @Test
     public void testRestoreV4CustomAsBackupNameBatchOps() throws BackupException {
         Prefs.Storage.setVolumePath(rscBackupPath.getUri().toString());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, new String[]{"test"}, null);
         bm.restore(options.getRestoreOpOptions("dnsfilter.android", 0), null);
@@ -234,7 +234,7 @@ public class BackupManagerTest {
     @Test
     public void testRestoreV4CustomAsRelativeDirBatchOps() throws BackupException {
         Prefs.Storage.setVolumePath(rscBackupPath.getUri().toString());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, null, new String[]{"dnsfilter.android/0_test"});
         bm.restore(options.getRestoreOpOptions("dnsfilter.android", 0), null);
@@ -247,7 +247,7 @@ public class BackupManagerTest {
                 .copyTo(tmpBackupPath, true));
         Path amDir = tmpBackupPath.findFile("AppManager");
         assertTrue(amDir.exists());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         DeleteOpOptions options = new DeleteOpOptions("dnsfilter.android", 0, null);
         bm.deleteBackup(options);
@@ -263,7 +263,7 @@ public class BackupManagerTest {
                 .copyTo(tmpBackupPath, true));
         Path amDir = tmpBackupPath.findFile("AppManager");
         assertTrue(amDir.exists());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, null, null);
         bm.deleteBackup(options.getDeleteOpOptions("dnsfilter.android", 0));
@@ -294,7 +294,7 @@ public class BackupManagerTest {
                 .copyTo(tmpBackupPath, true));
         Path amDir = tmpBackupPath.findFile("AppManager");
         assertTrue(amDir.exists());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, null, new String[]{"dnsfilter.android/0"});
         bm.deleteBackup(options.getDeleteOpOptions("dnsfilter.android", 0));
@@ -325,7 +325,7 @@ public class BackupManagerTest {
                 .copyTo(tmpBackupPath, true));
         Path amDir = tmpBackupPath.findFile("AppManager");
         assertTrue(amDir.exists());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, null, new String[]{"dnsfilter.android/0_test"});
         bm.deleteBackup(options.getDeleteOpOptions("dnsfilter.android", 0));
@@ -341,7 +341,7 @@ public class BackupManagerTest {
                 .copyTo(tmpBackupPath, true));
         Path amDir = tmpBackupPath.findFile("AppManager");
         assertTrue(amDir.exists());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, new String[]{"test"}, null);
         bm.deleteBackup(options.getDeleteOpOptions("dnsfilter.android", 0));
@@ -371,7 +371,7 @@ public class BackupManagerTest {
                 .copyTo(tmpBackupPath, true));
         Path amDir = tmpBackupPath.findFile("AppManager");
         assertTrue(amDir.exists());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, null, new String[]{"dnsfilter.android/0", "dnsfilter.android/0_test"});
         bm.deleteBackup(options.getDeleteOpOptions("dnsfilter.android", 0));
@@ -386,7 +386,7 @@ public class BackupManagerTest {
                 .copyTo(tmpBackupPath, true));
         Path amDir = tmpBackupPath.findFile("AppManager");
         assertTrue(amDir.exists());
-        new AppDb().loadInstalledOrBackedUpApplications(ContextUtils.getContext());
+        new AppDb().getBackups(true);
         BackupManager bm = new BackupManager();
         BatchBackupOptions options = new BatchBackupOptions(1110, new String[]{null, "test"}, null);
         bm.deleteBackup(options.getDeleteOpOptions("dnsfilter.android", 0));
