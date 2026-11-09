@@ -51,6 +51,20 @@ public class Amui02ThemeInstrumentedTest {
     }
 
     @Test
+    public void themeErrorColorUsesAppCompatAttributeInLightMode() {
+        Context context = themed(false, false);
+        assertEquals(color(context, androidx.appcompat.R.attr.colorError),
+                ColorCodes.getFailureColor(context));
+    }
+
+    @Test
+    public void themeErrorColorUsesAppCompatAttributeInDarkMode() {
+        Context context = themed(true, false);
+        assertEquals(color(context, androidx.appcompat.R.attr.colorError),
+                ColorCodes.getFailureColor(context));
+    }
+
+    @Test
     public void darkPureBlackPaintsExactRootBlack() {
         Context context = themed(true, true);
         assertEquals(Color.BLACK, color(context, android.R.attr.colorBackground));

@@ -41,7 +41,7 @@ public final class ColorCodes {
 
     public static int getFailureColor(@NonNull Context context) {
         // M3 error role preserves on-theme contrast; other semantic colors remain distinct.
-        return MaterialColors.getColor(context, com.google.android.material.R.attr.colorError,
+        return MaterialColors.getColor(context, androidx.appcompat.R.attr.colorError,
                 ColorCodes.class.getCanonicalName());
     }
 

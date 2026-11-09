@@ -26,7 +26,7 @@ class ThemeSourceContracts(unittest.TestCase):
                        'controller.setAppearanceLightStatusBars(lightBackground);\n'
                        'controller.setAppearanceLightNavigationBars(lightBackground);\n')
         self.put('app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/AppearanceUtils.java',appearance)
-        self.put('app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/ColorCodes.java','R.attr.colorError')
+        self.put('app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/ColorCodes.java','return MaterialColors.getColor(context, androidx.appcompat.R.attr.colorError, ColorCodes.class.getCanonicalName());')
         self.put('.github/workflows/devtool-tasker-ci.yml',
             "(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01'))\n"*6
             + "branches: [feature/tasker-automation, 'feature/amui01*']\n"
@@ -34,7 +34,7 @@ class ThemeSourceContracts(unittest.TestCase):
             + "workflow_dispatch:\noptions: [source, build, test, lint, instrumentation, full]\n"
             + 'python3 scripts/devtool/check_amui01_hf09_kvm.py --check\npython3 scripts/devtool/check_amui02_theme.py --check\n'
             +'scripts/devtool/amui02_hosted_theme.sh\n'*2+'AMUI02_EXPECT_API=36\n'+'${{ runner.temp }}/amui02-*.json\n'*2)
-        self.put('app/src/androidTest/java/io/github/muntashirakon/AppManager/utils/appearance/Amui02ThemeInstrumentedTest.java','@Test\n'*4+'Prefs.Appearance.setPureBlackTheme(originalPureBlack);\nPrefs.Appearance.setNightMode(originalMode);\n')
+        self.put('app/src/androidTest/java/io/github/muntashirakon/AppManager/utils/appearance/Amui02ThemeInstrumentedTest.java','@Test\n'*6+'Prefs.Appearance.setPureBlackTheme(originalPureBlack);\nPrefs.Appearance.setNightMode(originalMode);\n'+'themeErrorColorUsesAppCompatAttributeInLightMode\n'+'themeErrorColorUsesAppCompatAttributeInDarkMode\n')
         for n in ACTIVITIES:
             self.put(f'app/src/main/res/layout/activity_{n}.xml', '<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android" android:background="?android:attr/colorBackground"/>')
     def tearDown(self): self._temp.cleanup()
@@ -62,6 +62,26 @@ class ThemeSourceContracts(unittest.TestCase):
         p.write_text(p.read_text().replace('</resources>',
             '<style name="ThemeOverlay.AppTheme.PureBlackRoot" parent="" /></resources>'))
         with self.assertRaisesRegex(AssertionError, 'missing/duplicated'):
+            check(self.root)
+
+    def test_hf05_reject_wrong_material_r_namespace(self):
+        p=self.root/'app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/ColorCodes.java'
+        p.write_text(p.read_text().replace('androidx.appcompat.R.attr.colorError',
+            'com.google.android.material.R.attr.colorError'))
+        with self.assertRaisesRegex(AssertionError, 'Material R class'):
+            check(self.root)
+
+    def test_hf05_reject_hardcoded_error_indicator(self):
+        p=self.root/'app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/ColorCodes.java'
+        p.write_text('return 0xff000000;')
+        with self.assertRaisesRegex(AssertionError, 'AppCompat colorError'):
+            check(self.root)
+
+    def test_hf05_reject_framework_only_error_attr(self):
+        p=self.root/'app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/ColorCodes.java'
+        p.write_text(p.read_text().replace('androidx.appcompat.R.attr.colorError',
+            'android.R.attr.colorError'))
+        with self.assertRaisesRegex(AssertionError, 'AppCompat colorError'):
             check(self.root)
 
     def test_reject_surface_black(self):

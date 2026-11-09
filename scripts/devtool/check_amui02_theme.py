@@ -47,7 +47,10 @@ def check(root: Path):
     assert 'ThemeOverlay_AppTheme_PureBlackRoot, true' in appearance
     assert 'controller.setAppearanceLightStatusBars(lightBackground);' in appearance
     assert 'controller.setAppearanceLightNavigationBars(lightBackground);' in appearance
-    assert 'R.attr.colorError' in read(COLORS), 'M3 error color must be used'
+    # HF05: colorError belongs to AppCompat, not Material's nontransitive R.
+    colors = read(COLORS)
+    assert 'com.google.android.material.R.attr.colorError' not in colors,         'HF05: Material R class does not own colorError; javac will fail'
+    assert 'return MaterialColors.getColor(context, androidx.appcompat.R.attr.colorError,' in colors,         'HF05: Material failure indicator must resolve AppCompat colorError'
     ns = '{http://schemas.android.com/apk/res/android}'
     for name in ACTIVITIES:
         p = f'app/src/main/res/layout/activity_{name}.xml'
@@ -64,7 +67,9 @@ def check(root: Path):
     assert wf.count('scripts/devtool/amui02_hosted_theme.sh') == 2
     assert 'AMUI02_EXPECT_API=36' in wf
     assert wf.count('${{ runner.temp }}/amui02-*.json') == 2
-    assert read(TEST).count('@Test') >= 4
+    assert read(TEST).count('@Test') >= 6, 'HF05: two error-role device tests missing'
+    assert 'themeErrorColorUsesAppCompatAttributeInLightMode' in read(TEST)
+    assert 'themeErrorColorUsesAppCompatAttributeInDarkMode' in read(TEST)
     assert 'Prefs.Appearance.setPureBlackTheme(originalPureBlack);' in read(TEST)
     assert 'Prefs.Appearance.setNightMode(originalMode);' in read(TEST)
     assert 'AMT-06C' not in read(TEST), 'not allowed to perform Tasker fixture operations in UI tests'
