@@ -89,4 +89,23 @@ public class Amui02ThemeInstrumentedTest {
         assertEquals(color(context, com.google.android.material.R.attr.colorSurface),
                 color(context, android.R.attr.colorBackground));
     }
+
+    @Test
+    public void widgetContextDarkPureBlackLeavesRaisedSurfaceTonal() {
+        Prefs.Appearance.setNightMode(AppCompatDelegate.MODE_NIGHT_YES);
+        Prefs.Appearance.setPureBlackTheme(true);
+        Context widget = AppearanceUtils.getThemedWidgetContext(
+                InstrumentationRegistry.getInstrumentation().getTargetContext(), false);
+        assertEquals(Color.BLACK, color(widget, android.R.attr.colorBackground));
+        assertNotEquals(Color.BLACK, color(widget, com.google.android.material.R.attr.colorSurface));
+    }
+
+    @Test
+    public void widgetContextLightIsNotBlackWhenPreferenceRemainsEnabled() {
+        Prefs.Appearance.setNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        Prefs.Appearance.setPureBlackTheme(true);
+        Context widget = AppearanceUtils.getThemedWidgetContext(
+                InstrumentationRegistry.getInstrumentation().getTargetContext(), false);
+        assertNotEquals(Color.BLACK, color(widget, android.R.attr.colorBackground));
+    }
 }

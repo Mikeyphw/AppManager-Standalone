@@ -44,14 +44,16 @@ public class TextInputDialogBuilder {
 
     @SuppressLint("InflateParams")
     public TextInputDialogBuilder(@NonNull Context context, @Nullable CharSequence inputTextLabel) {
-        mContext = context;
-        View view = View.inflate(context, R.layout.dialog_text_input, null);
+        // Material alert overlay must own both content inflation and text lookups.
+        mBuilder = new MaterialAlertDialogBuilder(context);
+        mContext = mBuilder.getContext();
+        View view = View.inflate(mContext, R.layout.dialog_text_input, null);
         mTextInputLayout = view.findViewById(android.R.id.text1);
         mTextInputLayout.setHint(inputTextLabel);
         mEditText = view.findViewById(android.R.id.input);
         mCheckBox = view.findViewById(android.R.id.checkbox);
         mCheckBox.setVisibility(View.GONE);
-        mBuilder = new MaterialAlertDialogBuilder(context).setView(view);
+        mBuilder.setView(view);
     }
 
     @SuppressLint("InflateParams")

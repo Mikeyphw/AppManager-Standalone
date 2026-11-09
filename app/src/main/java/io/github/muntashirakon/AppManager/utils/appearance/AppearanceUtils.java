@@ -84,8 +84,14 @@ public final class AppearanceUtils {
      */
     @NonNull
     public static Context getThemedWidgetContext(@NonNull Context context, boolean transparent) {
-        int theme = transparent ? Prefs.Appearance.getTransparentAppTheme() : Prefs.Appearance.getAppTheme();
-        ContextThemeWrapper newCtx = new ContextThemeWrapper(context, theme);
+        // Widgets need the same explicit locale, layout, and night mode as app dialogs.
+        AppearanceOptions options = new AppearanceOptions();
+        options.locale = LangUtils.getFromPreference(context);
+        options.layoutDirection = Prefs.Appearance.getLayoutDirection();
+        options.theme = transparent ? Prefs.Appearance.getTransparentAppTheme() : Prefs.Appearance.getAppTheme();
+        options.nightMode = Prefs.Appearance.getNightMode();
+        ContextThemeWrapper newCtx = new ContextThemeWrapper(context, options.theme);
+        newCtx.applyOverrideConfiguration(createOverrideConfiguration(context, options));
         Context themedContext = DynamicColors.wrapContextIfAvailable(newCtx);
         applyPureBlackBackground(themedContext, transparent);
         return themedContext;

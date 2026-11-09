@@ -80,6 +80,9 @@ public class SearchableItemsDialogBuilder<T extends CharSequence> {
     }
 
     public SearchableItemsDialogBuilder(@NonNull Context context, @NonNull List<T> itemNames) {
+        // Material3 overlay must be applied before inflating the search/list content.
+        mBuilder = new MaterialAlertDialogBuilder(context);
+        context = mBuilder.getContext();
         View view = View.inflate(context, R.layout.dialog_searchable_single_choice, null);
         RecyclerView recyclerView = view.findViewById(android.R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
@@ -100,7 +103,7 @@ public class SearchableItemsDialogBuilder<T extends CharSequence> {
         if (itemNames.size() < 6) {
             mSearchView.setVisibility(View.GONE);
         }
-        mBuilder = new MaterialAlertDialogBuilder(context).setView(view);
+        mBuilder.setView(view);
         @SuppressLint({"RestrictedApi", "PrivateResource"})
         int layoutId = MaterialAttributes.resolveInteger(context, androidx.appcompat.R.attr.listItemLayout,
                 R.layout.m3_alert_select_dialog_item);

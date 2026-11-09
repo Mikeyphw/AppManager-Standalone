@@ -99,6 +99,9 @@ public class SearchableMultiChoiceDialogBuilder<T> {
     }
 
     public SearchableMultiChoiceDialogBuilder(@NonNull Context context, @NonNull List<T> items, @NonNull List<CharSequence> itemNames) {
+        // Inflate against the dialog overlay, never the pre-overlay activity context.
+        mBuilder = new MaterialAlertDialogBuilder(context);
+        context = mBuilder.getContext();
         mView = View.inflate(context, R.layout.dialog_searchable_multi_choice, null);
         RecyclerView recyclerView = mView.findViewById(android.R.id.list);
         recyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
@@ -120,7 +123,7 @@ public class SearchableMultiChoiceDialogBuilder<T> {
         if (items.size() < 6) {
             mSearchView.setVisibility(View.GONE);
         }
-        mBuilder = new MaterialAlertDialogBuilder(context).setView(mView);
+        mBuilder.setView(mView);
         @SuppressLint({"RestrictedApi", "PrivateResource"})
         int layoutId = MaterialAttributes.resolveInteger(context, androidx.appcompat.R.attr.multiChoiceItemLayout,
                 com.google.android.material.R.layout.mtrl_alert_select_dialog_multichoice);
