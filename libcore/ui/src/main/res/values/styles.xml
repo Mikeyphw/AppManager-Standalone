@@ -95,6 +95,9 @@
         <item name="materialFullScreenAlertDialogTheme">@style/AppTheme.Black</item>
     </style>
 
+    <!-- Light-mode no-op. The dark overlay is applied AFTER wallpaper DynamicColors. -->
+    <style name="ThemeOverlay.AppTheme.PureBlackRoot" />
+
     <style name="AppTheme.TransparentBackground" parent="AppTheme">
         <item name="android:background">@null</item>
         <item name="background">@null</item>

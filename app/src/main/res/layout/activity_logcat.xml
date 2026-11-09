@@ -6,7 +6,8 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".logcat.LogViewerActivity">
+    tools:context=".logcat.LogViewerActivity"
+    android:background="?android:attr/colorBackground">
 
     <io.github.muntashirakon.widget.AppBarLayout
         android:id="@+id/appbar"

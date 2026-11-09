@@ -26,8 +26,13 @@ name: Devtool Tasker integration / hosted Android
       - 'app/src/main/java/io/github/muntashirakon/AppManager/db/utils/AppDb.java'
       - 'app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java'
       - 'app/src/androidTest/java/io/github/muntashirakon/AppManager/main/**'
+      - 'app/src/androidTest/java/io/github/muntashirakon/AppManager/utils/appearance/**'
+      - 'app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/**'
+      - 'app/src/main/res/layout/**'
+      - 'app/src/main/res/values-night/**'
+      - 'libcore/ui/src/main/res/**'
   pull_request:
-    branches: [master]
+    branches: [master, feature/tasker-automation]
 
 permissions:
   contents: read
@@ -68,6 +73,7 @@ jobs:
           python3 scripts/devtool/check_amui01_backup_hf05.py --check
           python3 scripts/devtool/check_amui01_hf08_lint.py --check
           python3 scripts/devtool/check_amui01_hf09_kvm.py --check
+          python3 scripts/devtool/check_amui02_theme.py --check
           python3 -m unittest discover -s scripts/devtool -p 'test_*.py' -v
           sh -n devtoolw
       - name: Verify upstream merge compatibility without changing the tree
@@ -284,7 +290,7 @@ jobs:
           disable-linux-hw-accel: false
           emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: bash scripts/devtool/amt03_hosted_instrumentation.sh && bash scripts/devtool/amui01_hosted_instrumentation.sh
+          script: bash scripts/devtool/amt03_hosted_instrumentation.sh && bash scripts/devtool/amui01_hosted_instrumentation.sh && bash scripts/devtool/amui02_hosted_theme.sh
       - name: Upload instrumentation receipt and diagnostics
         if: always()
         uses: actions/upload-artifact@v4
@@ -294,6 +300,7 @@ jobs:
             ${{ runner.temp }}/amt03-instrumentation.json
             ${{ runner.temp }}/amt03-instrumentation.log
             ${{ runner.temp }}/amui01-*.json
+            ${{ runner.temp }}/amui02-*.json
             ${{ runner.temp }}/amui01-*.log
           if-no-files-found: warn
           retention-days: 7
@@ -400,7 +407,7 @@ jobs:
           disable-linux-hw-accel: 'false'
           emulator-boot-timeout: 900
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
-          script: AMUI01_EXPECT_API=36 bash scripts/devtool/amui01_hosted_instrumentation.sh
+          script: AMUI01_EXPECT_API=36 bash scripts/devtool/amui01_hosted_instrumentation.sh && AMUI02_EXPECT_API=36 bash scripts/devtool/amui02_hosted_theme.sh
       - name: Upload exact API36 lifecycle receipts
         if: always()
         uses: actions/upload-artifact@v4
@@ -408,6 +415,7 @@ jobs:
           name: appmanager-amui01-api36-${{ github.run_id }}-${{ github.run_attempt }}
           path: |
             ${{ runner.temp }}/amui01-*.json
+            ${{ runner.temp }}/amui02-*.json
             ${{ runner.temp }}/amui01-*.log
           if-no-files-found: error
           retention-days: 7
