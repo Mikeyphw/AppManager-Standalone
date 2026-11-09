@@ -9,12 +9,12 @@ readonly REPO="Mikeyphw/AppManager-Standalone"
 readonly LOCAL_NAME="AppManager"
 readonly BRANCH="feature/amui01-hf01-reissued-20261109"
 readonly PR_BASE="feature/tasker-automation"
-readonly EXPECTED_SHA="64337fe557a1c91293d432a89d4d52a158488c99"
-readonly ARCHIVE="${1:-/storage/emulated/0/Download/AMUI01_HF08_RESTRICTED_API_AND_PR_WATCH_CONSOLIDATED_20261109.overlay.zip}"
+readonly EXPECTED_SHA="cf8dd9522991fcdf5c0027e58e4eee205985fc09"
+readonly ARCHIVE="${1:-/storage/emulated/0/Download/AMUI01_HF09_HF01_SCOPED_KVM_TEST_CONSOLIDATED_20261109.overlay.zip}"
 readonly TITLE="AMUI-01: installed-app list reliability and hosted Android acceptance"
 
 function refuse() {
-  print -ru2 -- "AMUI01_HF08_REFUSED: $*"
+  print -ru2 -- "AMUI01_HF09_REFUSED: $*"
   exit 1
 }
 
@@ -48,7 +48,7 @@ assert x.get("schema_version")==2 and x.get("type")=="overlay"
 assert r.get("name")=="AppManager" and r.get("branch")=="feature/amui01-hf01-reissued-20261109"
 assert r.get("remote")=="https://github.com/Mikeyphw/AppManager-Standalone.git"
 assert x.get("target")=="app"
-print("AMUI01_HF08_MANIFEST_REPO_PASS")
+print("AMUI01_HF09_MANIFEST_REPO_PASS")
 ' || refuse 'incorrect overlay repository metadata'
 print -- "Archive SHA-256: $(sha256sum "$ARCHIVE")"
 
@@ -64,10 +64,10 @@ else
   # Only the exact single-child HF08 commit is eligible for recovery.
   [[ "$local_sha" != "$EXPECTED_SHA" ]] || refuse 'unexpected remote feature head'
   [[ "$(git rev-parse HEAD^)" == "$EXPECTED_SHA" ]] || refuse 'cannot resume: HEAD is not a direct child of source pin'
-  [[ "$(git log -1 --format=%s)" == 'fix(app-list): remove restricted AppCompat search type and automate PR qualification' ]] || refuse 'cannot resume: unexpected commit identity'
+  [[ "$(git log -1 --format=%s)" == 'fix(ci): stabilize API36 KVM permissions and preserve PR qualification' ]] || refuse 'cannot resume: unexpected commit identity'
   [[ "$remote_before" == "$EXPECTED_SHA" || "$remote_before" == "$local_sha" ]] || refuse 'cannot resume: remote branch has diverged'
-  python3 -B scripts/devtool/check_amui01_hf08_lint.py --check || refuse 'cannot resume: HF08 source contract failed'
-  print -- "AMUI01_HF08_RESUME_VERIFIED $local_sha"
+  python3 -B scripts/devtool/check_amui01_hf09_kvm.py --check || refuse 'cannot resume: HF09 source contract failed'
+  print -- "AMUI01_HF09_RESUME_VERIFIED $local_sha"
 fi
 [[ -z "$(git status --porcelain --untracked-files=all)" ]] || refuse 'uncommitted changes remain; refusing push'
 
@@ -75,7 +75,7 @@ print -- '=== Push source commit to standalone origin ==='
 git push origin "$BRANCH" || refuse 'push failed; no force-push attempted'
 remote_sha="$(git ls-remote origin "refs/heads/$BRANCH" | cut -f1)"
 [[ "$remote_sha" == "$local_sha" ]] || refuse 'pushed SHA could not be verified'
-print -- "AMUI01_HF08_PUSH_PASS $local_sha"
+print -- "AMUI01_HF09_PUSH_PASS $local_sha"
 
 print -- '=== Open or reuse PR against Tasker integration branch ==='
 pr_num="$(gh pr list -R "$REPO" --state open --head "$BRANCH" --json number --jq '.[0].number // empty')" || refuse 'could not check existing PRs'
@@ -86,12 +86,12 @@ else
   pr_body_file="$(mktemp "$TMPDIR/amui01-hf08-pr.XXXXXXXX.md")" || refuse 'cannot stage PR message'
   trap 'rm -f -- "$pr_body_file"' EXIT
   cat > "$pr_body_file" <<EOF
-## AMUI-01 reliability and HF08 hosted lint fix
+## AMUI-01 reliability and HF09 API36 emulator KVM access
 
-- Fix SearchView focus handling without referencing AppCompat's restricted SearchAutoComplete type.
+- Ensure API36 emulator runner can read/write /dev/kvm after udev rules, with permission diagnostics.
 - Preserve authoritative installed-package reconciliation and the HF05 backup-only Robolectric setup.
 - Keep strict lint baseline, Android 15/16 instrumentation, and source contract tests.
-- Record unattended Devtool apply / push / PR / hosted qualification workflow.
+- Preserve automatic Devtool apply, commit, push, existing PR reuse and exact-commit hosted CI watching.
 
 Source-pinned post-fix commit: $local_sha.
 No local Gradle, no force-push, and no automatic merge.
@@ -101,7 +101,7 @@ EOF
   pr_num="$(gh pr list -R "$REPO" --state open --head "$BRANCH" --json number --jq '.[0].number // empty')"
   [[ -n "$pr_num" ]] || refuse 'PR creation response was not reflected in GitHub'
 fi
-print -- "AMUI01_HF08_PR_OPEN https://github.com/$REPO/pull/$pr_num"
+print -- "AMUI01_HF09_PR_OPEN https://github.com/$REPO/pull/$pr_num"
 
 print -- '=== Locate the exact-commit hosted workflow ==='
 run_id=''
@@ -113,7 +113,7 @@ done
 [[ -n "$run_id" ]] || refuse 'GitHub did not register an exact-commit push run; inspect Actions manually'
 observed_sha="$(gh api "repos/$REPO/actions/runs/$run_id" --jq .head_sha)" || refuse 'could not verify workflow SHA'
 [[ "$observed_sha" == "$local_sha" ]] || refuse 'workflow SHA differs from pushed commit'
-print -- "AMUI01_HF08_RUN https://github.com/$REPO/actions/runs/$run_id"
+print -- "AMUI01_HF09_RUN https://github.com/$REPO/actions/runs/$run_id"
 
 # Never auto-merge. Hosted Gradle runs on GitHub, never in Termux.
 ci_rc=0
@@ -123,7 +123,7 @@ pr_rc=0
 print -- "=== Watch PR #$pr_num checks ==="
 gh pr checks "$pr_num" -R "$REPO" --watch --fail-fast || pr_rc=$?
 if (( ci_rc != 0 || pr_rc != 0 )); then
-  print -ru2 -- "AMUI01_HF08_HOSTED_FAILURE: run_rc=$ci_rc pr_rc=$pr_rc"
+  print -ru2 -- "AMUI01_HF09_HOSTED_FAILURE: run_rc=$ci_rc pr_rc=$pr_rc"
   exit 1
 fi
-print -- "AMUI01_HF08_HOSTED_PASS: https://github.com/$REPO/pull/$pr_num"
+print -- "AMUI01_HF09_HOSTED_PASS: https://github.com/$REPO/pull/$pr_num"

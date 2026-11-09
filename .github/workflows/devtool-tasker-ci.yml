@@ -67,6 +67,7 @@ jobs:
           python3 scripts/devtool/check_amui01_contract.py --check
           python3 scripts/devtool/check_amui01_backup_hf05.py --check
           python3 scripts/devtool/check_amui01_hf08_lint.py --check
+          python3 scripts/devtool/check_amui01_hf09_kvm.py --check
           python3 -m unittest discover -s scripts/devtool -p 'test_*.py' -v
           sh -n devtoolw
       - name: Verify upstream merge compatibility without changing the tree
@@ -379,6 +380,13 @@ jobs:
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules > /dev/null
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
+          # udev does not always update the existing device-node permissions
+          # before the GitHub runner's next shell command. On this disposable
+          # hosted runner, grant the emulator process direct KVM read/write.
+          echo "AMUI01_API36_KVM_BEFORE=$(stat -c '%a %U:%G %n' /dev/kvm)"
+          id
+          sudo chmod 0666 /dev/kvm
+          echo "AMUI01_API36_KVM_AFTER=$(stat -c '%a %U:%G %n' /dev/kvm)"
           test -r /dev/kvm && test -w /dev/kvm || {
             echo '::error::KVM inaccessible for API36 emulator' >&2; exit 1;
           }
