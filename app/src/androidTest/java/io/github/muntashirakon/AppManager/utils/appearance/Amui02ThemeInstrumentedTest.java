@@ -73,7 +73,7 @@ public class Amui02ThemeInstrumentedTest {
     @Test
     public void darkPureBlackRetainsMaterialAccentAndRaisedSurface() {
         Context context = themed(true, true);
-        assertNotEquals(Color.BLACK, color(context, com.google.android.material.R.attr.colorPrimary));
+        assertNotEquals(Color.BLACK, color(context, androidx.appcompat.R.attr.colorPrimary));
         assertNotEquals(Color.BLACK, color(context, com.google.android.material.R.attr.colorSurface));
     }
 

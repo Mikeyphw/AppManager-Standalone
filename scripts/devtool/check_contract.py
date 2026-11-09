@@ -145,8 +145,19 @@ def inspect(root: Path = ROOT) -> dict[str, object]:
     require((root / 'scripts/devtool/check_upstream_lint_baseline.py').is_file(),
             "missing pinned upstream lint baseline verifier")
     require("android-actions/setup-android@v3" not in workflow, "legacy Android SDK action cannot be used")
-    require("pull_request:" in workflow and "feature/tasker-automation" in workflow,
-            "upstream-compatible CI triggers missing")
+    # Targeted push/PR checks are mandatory; expensive full gates are manual-only.
+    targeted_path = root / ".github/workflows/amui-targeted-ci.yml"
+    require(targeted_path.is_file(), "missing targeted development workflow")
+    targeted = targeted_path.read_text(encoding="utf-8") if targeted_path.is_file() else ""
+    events = workflow.split('"on":\n', 1)[1].split('\npermissions:', 1)[0]
+    require('  workflow_dispatch:' in events and '  push:' not in events and '  pull_request:' not in events,
+            "full hosted CI must be manual-only heavy CI")
+    require('  pull_request:' in targeted and '  push:' in targeted and
+            "branches: ['feature/amui*', feature/tasker-automation]" in targeted and
+            'feature/tasker-automation' in targeted,
+            "upstream-compatible targeted CI triggers missing")
+    require('python3 -B scripts/devtool/check_contract.py --check' in targeted,
+            "AMT00 must run in targeted source job")
     require("--release" not in workflow and "assembleRelease" not in workflow,
             "production release build must remain outside initial automation")
     require((root / "docs/DEVTOOL_TASKER.md").is_file(), "missing consumer documentation")

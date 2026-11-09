@@ -44,6 +44,11 @@ jobs:
           set -euo pipefail
           export PYTHONDONTWRITEBYTECODE=1
           python3 -B scripts/devtool/check_contract.py --check
+          python3 -B scripts/devtool/check_amt04_contract.py --check
+          python3 -B scripts/devtool/check_amt04b2_contract.py --check
+          python3 -B scripts/devtool/check_amt04b2b_contract.py --check
+          python3 -B scripts/devtool/check_amui_ci01_hf01.py --check
+          python3 -B scripts/devtool/test_amui_ci01_hf01.py
           python3 -B scripts/devtool/check_amui01_ci_push.py
           python3 -B scripts/devtool/test_amui01_ci_push.py
           python3 -B scripts/devtool/check_amui02_theme.py --check

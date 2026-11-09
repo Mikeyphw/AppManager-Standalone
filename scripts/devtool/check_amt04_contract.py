@@ -18,6 +18,7 @@ REQUIRED = tuple(BASE / s for s in NAMES) + (
     Path('app/src/main/res/values/strings_automation.xml'),
     BASE / 'TaskerActionReceiver.java',
     Path('.github/workflows/devtool-tasker-ci.yml'),
+    Path('.github/workflows/amui-targeted-ci.yml'),
     Path('docs/AMT04A_PACKAGE_QUERY.md'),
 )
 
@@ -38,6 +39,7 @@ def inspect(root: Path = ROOT) -> dict:
     old_receiver = sources['TaskerActionReceiver.java']
     test = sources['TaskerJournalInstrumentedTest.java']
     workflow = sources['devtool-tasker-ci.yml']
+    targeted = sources['amui-targeted-ci.yml']
     for marker in ('KEY_VERSION', 'KEY_TOKEN', 'KEY_PACKAGE', 'KEY_DYNAMIC',
                    'validConfiguration(', 'validPackage(', 'validVariable(',
                    'EXTRA_VARIABLE_REPLACE_KEYS', 'EXTRA_RELEVANT'):
@@ -65,8 +67,11 @@ def inspect(root: Path = ROOT) -> dict:
             'package-query evaluator must not be an independently registered receiver')
     require('testQueryOwnPackage' in test and 'testQueryUnresolvedVariable' in test,
             'hosted instrumentation must execute read-only package query cases')
-    require('app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/**' in workflow,
-            'instrumentation-only pushes must trigger source CI')
+    require('  push:' in targeted and
+            "branches: ['feature/amui*', feature/tasker-automation]" in targeted and
+            'app/src/(main|androidTest)/' in targeted and
+            'python3 -B scripts/devtool/check_amt04_contract.py --check' in targeted,
+            'instrumentation-only pushes must trigger source CI and scoped AndroidTest compilation')
     require('check_amt04_contract.py --check' in workflow,
             'AMT-04 source gate missing from hosted CI')
     require('devtool.android_instrumentation' not in receiver and
