@@ -3,6 +3,8 @@ package io.github.muntashirakon.AppManager.utils.appearance;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertFalse;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -19,6 +21,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import io.github.muntashirakon.AppManager.settings.Prefs;
+import io.github.muntashirakon.util.UiUtils;
 
 /** Theme acceptance against actual installed resources on the hosted emulator, no app-data restore. */
 @RunWith(AndroidJUnit4.class)
@@ -107,5 +110,19 @@ public class Amui02ThemeInstrumentedTest {
         Context widget = AppearanceUtils.getThemedWidgetContext(
                 InstrumentationRegistry.getInstrumentation().getTargetContext(), false);
         assertNotEquals(Color.BLACK, color(widget, android.R.attr.colorBackground));
+    }
+
+    @Test
+    public void darkBottomSheetUsesDialogContextForBarContrast() {
+        Context context = themed(true, true);
+        assertTrue(UiUtils.isDarkMode(context));
+        assertNotEquals(Color.BLACK, color(context, com.google.android.material.R.attr.colorSurface));
+    }
+
+    @Test
+    public void lightBottomSheetUsesDialogContextForBarContrast() {
+        Context context = themed(false, true);
+        assertFalse(UiUtils.isDarkMode(context));
+        assertNotEquals(Color.BLACK, color(context, android.R.attr.colorBackground));
     }
 }

@@ -149,7 +149,9 @@ public final class AppearanceUtils {
         final int effectiveMode = mapNightModeOnce(context, Prefs.Appearance.getNightMode());
         if (effectiveMode == AppCompatDelegate.MODE_NIGHT_YES) return true;
         if (effectiveMode == AppCompatDelegate.MODE_NIGHT_NO) return false;
-        return (Resources.getSystem().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+        // Follow the supplied themed context. A wrapped dialog or widget may have
+        // a night-mode override different from the process/system resources.
+        return (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
                 == Configuration.UI_MODE_NIGHT_YES;
     }
 

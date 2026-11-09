@@ -4,6 +4,7 @@ package io.github.muntashirakon.dialog;
 
 import android.app.Dialog;
 import android.content.Context;
+import android.graphics.Color;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.TransitionDrawable;
 import android.os.Build;
@@ -232,10 +233,17 @@ public abstract class CapsuleBottomSheetDialogFragment extends BottomSheetDialog
             Window window = getWindow();
             if (window != null) {
                 window.getAttributes().windowAnimations = R.style.AppTheme_BottomSheetAnimation;
+                // The dialog may have an explicit night-mode override even when
+                // the process/global preference has not yet been synchronized.
                 WindowCompat.setDecorFitsSystemWindows(window, false);
-                UiUtils.setSystemBarStyle(window, true);
-                new WindowInsetsControllerCompat(window, window.getDecorView())
-                        .setAppearanceLightNavigationBars(!UiUtils.isDarkMode());
+                window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+                window.setStatusBarColor(Color.TRANSPARENT);
+                window.setNavigationBarColor(Color.TRANSPARENT);
+                boolean lightBars = !UiUtils.isDarkMode(getContext());
+                WindowInsetsControllerCompat controller =
+                        new WindowInsetsControllerCompat(window, window.getDecorView());
+                controller.setAppearanceLightStatusBars(lightBars);
+                controller.setAppearanceLightNavigationBars(lightBars);
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                     window.addFlags(WindowManager.LayoutParams.FLAG_BLUR_BEHIND);
                     window.getAttributes().setBlurBehindRadius(64);

@@ -54,6 +54,8 @@ jobs:
           python3 -B scripts/devtool/check_amui02_theme.py --check
           python3 -B scripts/devtool/check_amui02b_dialog_theme.py --check
           python3 -B scripts/devtool/test_amui02b_dialog_theme.py
+          python3 -B scripts/devtool/check_amui02c_bottom_sheet.py --check
+          python3 -B scripts/devtool/test_amui02c_bottom_sheet.py
           python3 -B scripts/devtool/test_amui02_theme.py
           python3 -B scripts/devtool/check_amt06c_contract.py --check
           python3 -B scripts/devtool/check_amui01_contract.py --check
