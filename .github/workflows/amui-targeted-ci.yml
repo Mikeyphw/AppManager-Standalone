@@ -1,0 +1,139 @@
+name: AppManager Targeted CI (development)
+
+"on":
+  pull_request:
+    branches: [feature/tasker-automation, master]
+  push:
+    branches: ['feature/amui*', feature/tasker-automation]
+  workflow_dispatch:
+    inputs:
+      focus:
+        description: 'Small checks only: auto, source-only or compile-only'
+        type: choice
+        options: [auto, source, compile]
+        default: auto
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: appmanager-targeted-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source-contract:
+    name: Targeted source and regression contracts
+    # Same-repo PRs already have an exact-commit push run: skip duplicate jobs.
+    # Fork PRs have no origin branch push, so still get checks here.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    runs-on: ubuntu-latest
+    outputs:
+      compile: ${{ steps.scope.outputs.compile }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Source-only development gates (no Gradle)
+        shell: bash
+        run: |
+          set -euo pipefail
+          export PYTHONDONTWRITEBYTECODE=1
+          python3 -B scripts/devtool/check_contract.py --check
+          python3 -B scripts/devtool/check_amui01_ci_push.py
+          python3 -B scripts/devtool/test_amui01_ci_push.py
+          python3 -B scripts/devtool/check_amui02_theme.py --check
+          python3 -B scripts/devtool/test_amui02_theme.py
+          python3 -B scripts/devtool/check_amt06c_contract.py --check
+          python3 -B scripts/devtool/check_amui01_contract.py --check
+          python3 -B scripts/devtool/check_amui01_hf09_kvm.py --check
+          sh -n devtoolw
+      - name: Detect compile-relevant changes
+        id: scope
+        shell: bash
+        env:
+          EVENT: ${{ github.event_name }}
+          FOCUS: ${{ inputs.focus || 'auto' }}
+          BASE_PR: ${{ github.event.pull_request.base.sha }}
+          HEAD_PR: ${{ github.event.pull_request.head.sha }}
+          BEFORE: ${{ github.event.before }}
+          CURRENT: ${{ github.sha }}
+          PR_ACTION: ${{ github.event.action }}
+          PR_PREVIOUS: ${{ github.event.before }}
+          PR_CURRENT: ${{ github.event.after }}
+        run: |
+          set -euo pipefail
+          if [[ "$FOCUS" == source ]]; then
+            echo 'compile=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$FOCUS" == compile ]]; then
+            echo 'compile=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ "$EVENT" == pull_request ]]; then
+            if [[ "$PR_ACTION" == synchronize && "$PR_PREVIOUS" =~ ^[0-9a-f]{40}$ && "$PR_CURRENT" =~ ^[0-9a-f]{40}$ ]]; then
+              from="$PR_PREVIOUS"
+              to="$PR_CURRENT"
+            else
+              from="$BASE_PR"
+              to="$HEAD_PR"
+            fi
+          elif [[ "$EVENT" == push ]]; then
+            from="$BEFORE"
+            to="$CURRENT"
+          else
+            echo 'compile=false' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [[ ! "$from" =~ ^[0-9a-f]{40}$ ]] || [[ "$from" == 0000000000000000000000000000000000000000 ]] || ! git cat-file -e "$from^{commit}"; then
+            echo '::notice::Base commit unavailable: compile fail-safe enabled'
+            echo 'compile=true' >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git diff --name-only "$from" "$to" > "$RUNNER_TEMP/amui-changed-files.txt"
+          if grep -Eq '^(app/src/(main|androidTest)/|libcore/ui/src/main/|libcore/[^/]+/src/main/|build.gradle|settings.gradle|gradle/|gradle.properties)' "$RUNNER_TEMP/amui-changed-files.txt"; then
+            echo 'compile=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'compile=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload scope receipt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: amui-targeted-scope-${{ github.run_id }}
+          path: ${{ runner.temp }}/amui-changed-files.txt
+          if-no-files-found: ignore
+          retention-days: 5
+
+  android-compile:
+    name: Scoped Android resource and Java compile (no emulator)
+    needs: [source-contract]
+    if: needs.source-contract.outputs.compile == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+          cache: gradle
+      - uses: android-actions/setup-android@v4
+      - name: Install build-only Android SDK
+        shell: bash
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null || true
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.0.0'
+      - name: Compile app and instrumentation Java (hosted only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./gradlew --no-daemon --max-workers=2 :app:compileDebugJavaWithJavac :app:compileDebugAndroidTestJavaWithJavac

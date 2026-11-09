@@ -9,30 +9,6 @@ name: Devtool Tasker integration / hosted Android
         default: source
         type: choice
         options: [source, build, test, lint, instrumentation, full]
-  push:
-    branches: [feature/tasker-automation, 'feature/amui01*']
-    paths:
-      - '.devtool.toml'
-      - 'devtoolw*'
-      - 'scripts/devtool/**'
-      - '.github/workflows/devtool-tasker-ci.yml'
-      - 'app/src/main/java/io/github/muntashirakon/AppManager/automation/**'
-      - 'app/src/main/java/io/github/muntashirakon/AppManager/batchops/BatchOpsService.java'
-      - 'app/src/test/java/io/github/muntashirakon/AppManager/automation/**'
-      - 'app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/**'
-      - 'app/src/main/java/io/github/muntashirakon/AppManager/main/**'
-      - 'app/src/main/java/io/github/muntashirakon/AppManager/types/PackageChangeReceiver.java'
-      - 'app/src/main/java/io/github/muntashirakon/AppManager/utils/PackageUtils.java'
-      - 'app/src/main/java/io/github/muntashirakon/AppManager/db/utils/AppDb.java'
-      - 'app/src/main/java/io/github/muntashirakon/AppManager/compat/PackageManagerCompat.java'
-      - 'app/src/androidTest/java/io/github/muntashirakon/AppManager/main/**'
-      - 'app/src/androidTest/java/io/github/muntashirakon/AppManager/utils/appearance/**'
-      - 'app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/**'
-      - 'app/src/main/res/layout/**'
-      - 'app/src/main/res/values-night/**'
-      - 'libcore/ui/src/main/res/**'
-  pull_request:
-    branches: [master, feature/tasker-automation]
 
 permissions:
   contents: read

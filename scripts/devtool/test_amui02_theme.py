@@ -29,9 +29,9 @@ class ThemeSourceContracts(unittest.TestCase):
         self.put('app/src/main/java/io/github/muntashirakon/AppManager/utils/appearance/ColorCodes.java','return MaterialColors.getColor(context, androidx.appcompat.R.attr.colorError, ColorCodes.class.getCanonicalName());')
         self.put('.github/workflows/devtool-tasker-ci.yml',
             "(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01'))\n"*6
-            + "branches: [feature/tasker-automation, 'feature/amui01*']\n"
-            + "branches: [master, feature/tasker-automation]\n"
-            + "workflow_dispatch:\noptions: [source, build, test, lint, instrumentation, full]\n"
+            + '"on":\n'
+            + "  workflow_dispatch:\noptions: [source, build, test, lint, instrumentation, full]\n"
+            + "permissions:\n"
             + 'python3 scripts/devtool/check_amui01_hf09_kvm.py --check\npython3 scripts/devtool/check_amui02_theme.py --check\n'
             +'scripts/devtool/amui02_hosted_theme.sh\n'*2+'AMUI02_EXPECT_API=36\n'+'${{ runner.temp }}/amui02-*.json\n'*2)
         self.put('app/src/androidTest/java/io/github/muntashirakon/AppManager/utils/appearance/Amui02ThemeInstrumentedTest.java','@Test\n'*6+'Prefs.Appearance.setPureBlackTheme(originalPureBlack);\nPrefs.Appearance.setNightMode(originalMode);\n'+'themeErrorColorUsesAppCompatAttributeInLightMode\n'+'themeErrorColorUsesAppCompatAttributeInDarkMode\n')
@@ -96,6 +96,18 @@ class ThemeSourceContracts(unittest.TestCase):
         p=self.root/'.github/workflows/devtool-tasker-ci.yml'
         p.write_text(p.read_text().replace('AMUI02_EXPECT_API=36',''))
         with self.assertRaises(AssertionError): check(self.root)
+    def test_reject_automatic_heavy_pr_trigger(self):
+        p=self.root/'.github/workflows/devtool-tasker-ci.yml'
+        p.write_text(p.read_text().replace('permissions:',
+            '  pull_request:\n    branches: [feature/tasker-automation]\n\npermissions:',1))
+        with self.assertRaises(AssertionError): check(self.root)
+
+    def test_reject_automatic_heavy_push_trigger(self):
+        p=self.root/'.github/workflows/devtool-tasker-ci.yml'
+        p.write_text(p.read_text().replace('permissions:',
+            '  push:\n    branches: [feature/tasker-automation]\n\npermissions:',1))
+        with self.assertRaises(AssertionError): check(self.root)
+
     def test_reject_loss_of_legacy_amui01_push_gate(self):
         p=self.root/'.github/workflows/devtool-tasker-ci.yml'
         p.write_text(p.read_text().replace("(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01'))",'false',1))

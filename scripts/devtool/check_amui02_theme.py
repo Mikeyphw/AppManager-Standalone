@@ -59,8 +59,10 @@ def check(root: Path):
     # Never rewrite AMUI-01's six source-contract-pinned predicates.
     old_push = "(github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01'))"
     assert wf.count(old_push) == 6
-    assert "branches: [feature/tasker-automation, 'feature/amui01*']" in wf
-    assert "branches: [master, feature/tasker-automation]" in wf
+    # Full workflow is manual; development gets scoped checks.
+    events = wf.split('"on":\n', 1)[1].split('\npermissions:', 1)[0]
+    assert '  workflow_dispatch:' in events and '  push:' not in events and '  pull_request:' not in events, \
+        'AMUI_CI_POLICY: automatic full workflow unexpectedly enabled'
     assert "workflow_dispatch:" in wf and "options: [source, build, test, lint, instrumentation, full]" in wf
     assert 'python3 scripts/devtool/check_amui01_hf09_kvm.py --check' in wf
     assert 'python3 scripts/devtool/check_amui02_theme.py --check' in wf
