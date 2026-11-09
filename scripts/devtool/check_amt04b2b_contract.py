@@ -18,6 +18,7 @@ FILES={
     'ledger_test':Path('app/src/test/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerPackageFreezeLedgerTest.java'),
     'device':Path('app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerJournalInstrumentedTest.java'),
     'workflow':Path('.github/workflows/devtool-tasker-ci.yml'),
+    'targeted':Path('.github/workflows/amui-targeted-ci.yml'),
     'manifest':Path('app/src/main/AndroidManifest.xml'),
 }
 
@@ -67,8 +68,10 @@ def inspect(root=ROOT):
         'device':['testFreezeOwnPackageAlwaysDenied', 'testForceStopOwnPackageAlwaysDenied'],
         'workflow':['default: source', 'options: [source, build, test, lint, instrumentation, full]',
                     'python3 scripts/devtool/check_amt04b2b_contract.py --check',
-                    "github.event_name == 'pull_request' && 'full'",
+                    'workflow_dispatch:',
                     "inputs.mode == 'full' || inputs.mode == 'instrumentation'"],
+        'targeted':["branches: ['feature/amui*', feature/tasker-automation]",
+                    'python3 -B scripts/devtool/check_amt04b2b_contract.py --check'],
     }
     for key,checks in guards.items():
         for part in checks:

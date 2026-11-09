@@ -27,6 +27,7 @@ import androidx.appcompat.app.PublicTwilightManager;
 import androidx.collection.ArrayMap;
 import androidx.core.app.ActivityCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.material.color.DynamicColors;
 
@@ -73,7 +74,9 @@ public final class AppearanceUtils {
         options.nightMode = Prefs.Appearance.getNightMode();
         ContextThemeWrapper newCtx = new ContextThemeWrapper(context, options.theme);
         newCtx.applyOverrideConfiguration(createOverrideConfiguration(context, options));
-        return DynamicColors.wrapContextIfAvailable(newCtx);
+        Context themedContext = DynamicColors.wrapContextIfAvailable(newCtx);
+        applyPureBlackBackground(themedContext, transparent);
+        return themedContext;
     }
 
     /**
@@ -81,9 +84,17 @@ public final class AppearanceUtils {
      */
     @NonNull
     public static Context getThemedWidgetContext(@NonNull Context context, boolean transparent) {
-        int theme = transparent ? Prefs.Appearance.getTransparentAppTheme() : Prefs.Appearance.getAppTheme();
-        ContextThemeWrapper newCtx = new ContextThemeWrapper(context, theme);
-        return DynamicColors.wrapContextIfAvailable(newCtx);
+        // Widgets need the same explicit locale, layout, and night mode as app dialogs.
+        AppearanceOptions options = new AppearanceOptions();
+        options.locale = LangUtils.getFromPreference(context);
+        options.layoutDirection = Prefs.Appearance.getLayoutDirection();
+        options.theme = transparent ? Prefs.Appearance.getTransparentAppTheme() : Prefs.Appearance.getAppTheme();
+        options.nightMode = Prefs.Appearance.getNightMode();
+        ContextThemeWrapper newCtx = new ContextThemeWrapper(context, options.theme);
+        newCtx.applyOverrideConfiguration(createOverrideConfiguration(context, options));
+        Context themedContext = DynamicColors.wrapContextIfAvailable(newCtx);
+        applyPureBlackBackground(themedContext, transparent);
+        return themedContext;
     }
 
     /**
@@ -123,6 +134,37 @@ public final class AppearanceUtils {
         }
     }
 
+    /**
+     * Only the window/root background is black. Material surfaces and all wallpaper-derived
+     * primary/secondary/container roles must remain intact after DynamicColors is applied.
+     * Translucent activities and dialog windows retain their transparency.
+     */
+    private static void applyPureBlackBackground(@NonNull Context context, boolean transparent) {
+        if (!transparent && Prefs.Appearance.isPureBlackTheme() && isDarkAppearance(context)) {
+            context.getTheme().applyStyle(io.github.muntashirakon.ui.R.style.ThemeOverlay_AppTheme_PureBlackRoot, true);
+        }
+    }
+
+    private static boolean isDarkAppearance(@NonNull Context context) {
+        final int effectiveMode = mapNightModeOnce(context, Prefs.Appearance.getNightMode());
+        if (effectiveMode == AppCompatDelegate.MODE_NIGHT_YES) return true;
+        if (effectiveMode == AppCompatDelegate.MODE_NIGHT_NO) return false;
+        // Follow the supplied themed context. A wrapped dialog or widget may have
+        // a night-mode override different from the process/system resources.
+        return (context.getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK)
+                == Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    private static void applySystemBarIconContrast(@NonNull Activity activity) {
+        Window window = activity.getWindow();
+        WindowInsetsControllerCompat controller = WindowCompat.getInsetsController(window, window.getDecorView());
+        if (controller != null) {
+            boolean lightBackground = !isDarkAppearance(activity);
+            controller.setAppearanceLightStatusBars(lightBackground);
+            controller.setAppearanceLightNavigationBars(lightBackground);
+        }
+    }
+
     private static class ActivityAppearanceCallback implements Application.ActivityLifecycleCallbacks {
         @Override
         public void onActivityPreCreated(@NonNull Activity activity, @Nullable Bundle savedInstanceState) {
@@ -132,8 +174,11 @@ public final class AppearanceUtils {
                         ? Prefs.Appearance.getTransparentAppTheme()
                         : Prefs.Appearance.getAppTheme());
             }
-            // Theme must be set first because the method below will add dynamic attributes to the theme
+            // Wallpaper colors must be installed before overriding only the root background.
             DynamicColors.applyToActivityIfAvailable(activity);
+            boolean transparent = activity instanceof PerProcessActivity
+                    && ((PerProcessActivity) activity).getTransparentBackground();
+            applyPureBlackBackground(activity, transparent);
         }
 
         @Override
@@ -143,6 +188,7 @@ public final class AppearanceUtils {
             }
             Window window = activity.getWindow();
             WindowCompat.setDecorFitsSystemWindows(window, false);
+            applySystemBarIconContrast(activity);
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
                 onActivityPostCreated(activity, savedInstanceState);
             }

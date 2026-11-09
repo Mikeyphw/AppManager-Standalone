@@ -14,6 +14,7 @@ def inspect(root=ROOT):
     backend=get(PKG/'TaskerPackageManageBackend.java')
     access=get(PKG/'TaskerPackageManageAccess.java')
     workflow=get(pathlib.Path('.github/workflows/devtool-tasker-ci.yml'))
+    targeted=get(pathlib.Path('.github/workflows/amui-targeted-ci.yml'))
     manifest=get(pathlib.Path('app/src/main/AndroidManifest.xml'))
     unit=get(pathlib.Path('app/src/test/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerPackageManageTest.java'))
     instrument=get(pathlib.Path('app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerJournalInstrumentedTest.java'))
@@ -33,7 +34,9 @@ def inspect(root=ROOT):
       (workflow,'options: [source, build, test, lint, instrumentation, full]'),
       (workflow,"inputs.mode != 'source' && inputs.mode != 'instrumentation'"),
       (workflow,"inputs.mode == 'full' || inputs.mode == 'instrumentation'"),
-      (workflow,"github.event_name == 'pull_request' && 'full'")]
+      (workflow,'workflow_dispatch:'),
+      (targeted,"branches: ['feature/amui*', feature/tasker-automation]"),
+      (targeted,'python3 -B scripts/devtool/check_amt04b2_contract.py --check')]
     for src,guard in guards:
         if guard not in src: errors.append('missing '+guard)
     if 'FreezeUtils.freeze(' in backend or 'Runtime.getRuntime(' in backend or 'ProcessBuilder(' in backend:

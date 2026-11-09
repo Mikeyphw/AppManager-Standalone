@@ -50,7 +50,9 @@ public class TextInputDropdownDialogBuilder {
     @SuppressLint("InflateParams")
     public TextInputDropdownDialogBuilder(@NonNull FragmentActivity activity, @NonNull CharSequence inputTextLabel) {
         mActivity = activity;
-        View view = activity.getLayoutInflater().inflate(R.layout.dialog_text_input_dropdown, null);
+        mBuilder = new MaterialAlertDialogBuilder(activity);
+        // Input fields, dropdown rows and dialog chrome share one themed palette.
+        View view = View.inflate(mBuilder.getContext(), R.layout.dialog_text_input_dropdown, null);
         // Main input layout: always visible
         mMainInputLayout = view.findViewById(android.R.id.text1);
         mMainInputLayout.setHint(inputTextLabel);
@@ -63,7 +65,7 @@ public class TextInputDropdownDialogBuilder {
         // Checkbox: visible on demand
         mCheckBox = view.findViewById(android.R.id.checkbox);
         mCheckBox.setVisibility(View.GONE);
-        mBuilder = new MaterialAlertDialogBuilder(activity).setView(view);
+        mBuilder.setView(view);
     }
 
     @SuppressLint("InflateParams")
@@ -89,9 +91,9 @@ public class TextInputDropdownDialogBuilder {
     public <T> TextInputDropdownDialogBuilder setDropdownItems(List<T> items, int choice, boolean filterable) {
         ArrayAdapter<T> adapter;
         if (filterable) {
-            adapter = new AnyFilterArrayAdapter<>(mActivity, R.layout.auto_complete_dropdown_item, items);
+            adapter = new AnyFilterArrayAdapter<>(mBuilder.getContext(), R.layout.auto_complete_dropdown_item, items);
         } else {
-            adapter = new NoFilterArrayAdapter<>(mActivity, R.layout.auto_complete_dropdown_item, items);
+            adapter = new NoFilterArrayAdapter<>(mBuilder.getContext(), R.layout.auto_complete_dropdown_item, items);
         }
         mMainInput.setAdapter(adapter);
         if (choice >= 0) {
@@ -112,7 +114,7 @@ public class TextInputDropdownDialogBuilder {
         mAuxiliaryInputLayout.setHelperText(helperText);
         mAuxiliaryInput.setText(inputText);
         if (dropdownItems != null) {
-            ArrayAdapter<T> adapter = new NoFilterArrayAdapter<>(mActivity, R.layout.auto_complete_dropdown_item, dropdownItems);
+            ArrayAdapter<T> adapter = new NoFilterArrayAdapter<>(mBuilder.getContext(), R.layout.auto_complete_dropdown_item, dropdownItems);
             mAuxiliaryInput.setAdapter(adapter);
             mAuxiliaryInputLayout.setEndIconMode(TextInputLayout.END_ICON_DROPDOWN_MENU);
         } else {

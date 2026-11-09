@@ -1,0 +1,8 @@
+<!-- SPDX-License-Identifier: GPL-3.0-or-later -->
+<resources>
+    <!-- Pure Black must also paint the launch splash before activity DynamicColors applies. -->
+    <style name="AppTheme.Splash.Black" parent="AppTheme.Splash">
+        <item name="windowSplashScreenBackground">@android:color/black</item>
+        <item name="postSplashScreenTheme">@style/AppTheme.Black</item>
+    </style>
+</resources>

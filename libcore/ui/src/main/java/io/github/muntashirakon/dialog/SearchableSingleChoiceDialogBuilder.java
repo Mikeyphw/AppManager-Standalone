@@ -101,6 +101,9 @@ public class SearchableSingleChoiceDialogBuilder<T> {
     }
 
     public SearchableSingleChoiceDialogBuilder(@NonNull Context context, @NonNull List<T> items, @NonNull List<CharSequence> itemNames) {
+        // Material3 overlay must be applied before inflating the search/list content.
+        mBuilder = new MaterialAlertDialogBuilder(context);
+        context = mBuilder.getContext();
         View view = View.inflate(context, R.layout.dialog_searchable_single_choice, null);
         mRecyclerView = view.findViewById(android.R.id.list);
         mRecyclerView.setLayoutManager(new LinearLayoutManager(context, LinearLayoutManager.VERTICAL, false));
@@ -122,7 +125,7 @@ public class SearchableSingleChoiceDialogBuilder<T> {
         if (items.size() < 6) {
             mSearchView.setVisibility(View.GONE);
         }
-        mBuilder = new MaterialAlertDialogBuilder(context).setView(view);
+        mBuilder.setView(view);
         @SuppressLint({"RestrictedApi", "PrivateResource"})
         int layoutId = MaterialAttributes.resolveInteger(context, androidx.appcompat.R.attr.singleChoiceItemLayout,
                 com.google.android.material.R.layout.mtrl_alert_select_dialog_singlechoice);

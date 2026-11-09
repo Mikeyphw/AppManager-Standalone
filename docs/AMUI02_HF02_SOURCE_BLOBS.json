@@ -1,0 +1,18 @@
+{
+  "repository": "Mikeyphw/AppManager-Standalone",
+  "branch": "feature/amui02-global-material-you-20261109",
+  "exact_base": "651e7f568018a2c45a1e7a9bd4089ccba7f98abf",
+  "verified_source_git_blob_sha1": {
+    "libcore/ui/src/main/res/values/styles.xml": "a7d1f047c5a562124b4fb9d89ac43e1fad18121a",
+    "libcore/ui/src/main/res/values-night/styles.xml": "9197d71acf6ae7a1d594d163612490f9c080942e",
+    "scripts/devtool/check_amui02_theme.py": "fee1bea85cc877a7bde4548bfc8eceebc3fcf073",
+    "scripts/devtool/test_amui02_theme.py": "6764537db27a8a2bfcee1a6418241f1efac111d9"
+  },
+  "source": "GitHub fetch_file at exact commit",
+  "hosted_failures": [
+    42675787205,
+    42675784491
+  ],
+  "gradle_on_termux": false,
+  "mandatory_ci_gates_preserved": true
+}
