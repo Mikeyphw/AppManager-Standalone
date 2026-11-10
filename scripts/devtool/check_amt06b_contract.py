@@ -20,6 +20,7 @@ FILES={
  'manage_test':Path('app/src/test/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerPackageManageTest.java'),
  'device':Path('app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerJournalInstrumentedTest.java'),
  'workflow':Path('.github/workflows/devtool-tasker-ci.yml'),
+ 'targeted':Path('.github/workflows/amui-targeted-ci.yml'),
  'runner':Path('scripts/devtool/amt03_hosted_instrumentation.sh'),
  'manifest':Path('app/src/main/AndroidManifest.xml'),
 }
@@ -89,7 +90,10 @@ GUARDS={
           'testRestoreReceiptSurvivesObjectReopenWithUnverifiedStatus',
           'testRestoreOperationNeverAcceptsDynamicPackageOrBackup'],
 'workflow':['check_amt06a_contract.py --check', 'check_amt06b_contract.py --check',
-            "app/src/main/java/io/github/muntashirakon/AppManager/batchops/BatchOpsService.java'"],
+            'workflow_dispatch:', '  device-instrumentation:',
+            "inputs.mode == 'full' || inputs.mode == 'instrumentation'"],
+ 'targeted':['python3 -B scripts/devtool/check_amt06b_contract.py --check',
+            "python3 -B -m unittest discover -s scripts/devtool -p 'test_*.py' -v"],
 'runner':["assert int(r.get('passed', 0)) >= 26, ('AMT06B_RESTORE_NEGATIVE_DEVICE_COVERAGE_INCOMPLETE', r)",
           "assert int(r.get('failed', 0)) == 0"],
 }

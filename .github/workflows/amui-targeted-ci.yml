@@ -58,10 +58,34 @@ jobs:
           python3 -B scripts/devtool/test_amui02c_bottom_sheet.py
           python3 -B scripts/devtool/check_amui03a_compact_list.py --check
           python3 -B scripts/devtool/test_amui03a_compact_list.py
+          python3 -B scripts/devtool/check_amui03b_responsive_list.py --check
+          python3 -B scripts/devtool/test_amui03b_responsive_list.py
+          python3 -B scripts/devtool/check_amui03c_consolidated.py --check
+          python3 -B scripts/devtool/check_amui04a_visual_gate.py --check
+          python3 -B scripts/devtool/check_amui04b_viewport_stress.py --check
+          python3 -B scripts/devtool/check_amui04c_refresh_races.py --check
+          python3 -B scripts/devtool/check_amui04d_final_gate.py --check
+          python3 -B scripts/devtool/check_amui05_acceptance.py --check
           python3 -B scripts/devtool/test_amui02_theme.py
           python3 -B scripts/devtool/check_amt06c_contract.py --check
           python3 -B scripts/devtool/check_amui01_contract.py --check
           python3 -B scripts/devtool/check_amui01_hf09_kvm.py --check
+          python3 -B scripts/devtool/check_automation_contract.py --check
+          python3 -B scripts/devtool/check_amt03_contract.py --check
+          python3 -B scripts/devtool/check_amt04b_contract.py --check
+          python3 -B scripts/devtool/check_amt05a_contract.py --check
+          python3 -B scripts/devtool/check_amt05b_contract.py --check
+          python3 -B scripts/devtool/check_amt05c_contract.py --check
+          python3 -B scripts/devtool/check_amui03b_hf03_contracts.py --check
+          python3 -B scripts/devtool/test_amui03b_hf03_contracts.py
+          python3 -B scripts/devtool/check_amt05d_contract.py --check
+          python3 -B scripts/devtool/check_amt06a_contract.py --check
+          python3 -B scripts/devtool/check_amt06b_contract.py --check
+          python3 -B scripts/devtool/check_amui01_backup_hf05.py --check
+          python3 -B scripts/devtool/check_amui01_hf08_lint.py --check
+          python3 -B -m unittest discover -s scripts/devtool -p 'test_*.py' -v
+          python3 -B scripts/devtool/check_amui03b_hf02_gate.py --check
+          python3 -B scripts/devtool/test_amui03b_hf02_gate.py
           sh -n devtoolw
       - name: Detect compile-relevant changes
         id: scope
@@ -107,7 +131,7 @@ jobs:
             exit 0
           fi
           git diff --name-only "$from" "$to" > "$RUNNER_TEMP/amui-changed-files.txt"
-          if grep -Eq '^(app/src/(main|androidTest)/|libcore/ui/src/main/|libcore/[^/]+/src/main/|build.gradle|settings.gradle|gradle/|gradle.properties)' "$RUNNER_TEMP/amui-changed-files.txt"; then
+          if grep -Eq '^(app/src/(main|androidTest)/|libcore/ui/src/main/|libcore/[^/]+/src/main/|build.gradle|settings.gradle|gradle/|gradle.properties|app/build\.gradle(\.kts)?$|libcore/[^/]+/build\.gradle(\.kts)?$|\.github/workflows/|scripts/devtool/(amui|amt|check_amui|test_amui|check_amt|test_amt)|buildSrc/)' "$RUNNER_TEMP/amui-changed-files.txt"; then
             echo 'compile=true' >> "$GITHUB_OUTPUT"
           else
             echo 'compile=false' >> "$GITHUB_OUTPUT"

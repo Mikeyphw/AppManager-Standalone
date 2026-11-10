@@ -38,8 +38,16 @@ def validate(sources:dict[str,str])->bool:
     for name in TEXTS:
         n=nodes[name]
         must(n.tag.endswith('TextView'),'bound field no longer a TextView: '+name)
-        must(n.get(ANDROID+'maxLines')=='1' and n.get(ANDROID+'ellipsize') in ('end','middle'),
-             'long text cannot truncate safely: '+name)
+        truncation = n.get(ANDROID+'ellipsize')
+        max_lines = n.get(ANDROID+'maxLines')
+        single_line = n.get(ANDROID+'singleLine')
+        # Android lint EllipsizeMaxLines: middle + maxLines=1 can crash.
+        # singleLine=true preserves the middle package-name truncation.
+        safe_truncation = (
+            (truncation == 'end' and max_lines == '1') or
+            (truncation in ('end', 'middle') and single_line == 'true' and max_lines is None)
+        )
+        must(safe_truncation, 'long text cannot truncate safely: '+name)
         must(n.get(ANDROID+'textAppearance','').startswith('?attr/textAppearance'),
              'text palette role missing: '+name)
     must(nodes['packageName'].get(ANDROID+'ellipsize')=='middle','long package IDs must retain recognizable suffix')
@@ -52,7 +60,7 @@ def validate(sources:dict[str,str])->bool:
     for marker in ('LayoutInflater.from(parent.getContext()).inflate(R.layout.item_main, parent, false)',
                    'cardView.setOnClickListener(', 'cardView.setOnLongClickListener(',
                    'holder.icon.setOnClickListener(', 'toggleSelection(currentPos);',
-                   'handleClick(item);', 'cardView.setStrokeColor(',
+                   'handleClick(getItem(currentPos));', 'cardView.setStrokeColor(',
                    'getItem(position).hashCode()', 'notifySelectionChange();',
                    'mActivity.viewModel.select(', 'mActivity.viewModel.deselect('):
         must(marker in a,'AMUI-01 interaction/binding anchor lost: '+marker)

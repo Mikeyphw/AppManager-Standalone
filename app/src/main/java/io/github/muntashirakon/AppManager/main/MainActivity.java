@@ -16,6 +16,7 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.TextView;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
@@ -33,6 +34,7 @@ import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.checkbox.MaterialCheckBox;
+import com.google.android.material.chip.Chip;
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.google.android.material.progressindicator.LinearProgressIndicator;
 import com.google.android.material.snackbar.Snackbar;
@@ -91,6 +93,7 @@ import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
 import io.github.muntashirakon.util.UiUtils;
+import io.github.muntashirakon.view.AutoFitGridLayoutManager;
 import io.github.muntashirakon.widget.MultiSelectionView;
 import io.github.muntashirakon.widget.SwipeRefreshLayout;
 
@@ -109,6 +112,8 @@ public class MainActivity extends BaseActivity implements SwipeRefreshLayout.OnR
     private SearchViewDebouncer mSearchDebouncer;
     private LinearProgressIndicator mProgressIndicator;
     private SwipeRefreshLayout mSwipeRefresh;
+    private Chip mQuickAll, mQuickUser, mQuickSystem, mQuickFrozen, mQuickBackedUp, mQuickAdvanced, mDisplayMode;
+    private TextView mListSummary;
     private MultiSelectionView mMultiSelectionView;
     MainBatchOpsHandler mBatchOpsHandler;
     private MenuItem mAppUsageMenu;
@@ -238,8 +243,12 @@ public class MainActivity extends BaseActivity implements SwipeRefreshLayout.OnR
 
         mAdapter = new MainRecyclerAdapter(MainActivity.this);
         mAdapter.setHasStableIds(true);
-        recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
+        // Persist display density without changing package, filter or selection state.
+        mAdapter.setDetailedMode(getPreferences(Context.MODE_PRIVATE).getBoolean("amui03c_detailed", false));
+        // Keep full metadata readable: columns resize when window width changes.
+        recyclerView.setLayoutManager(new AutoFitGridLayoutManager(this, UiUtils.dpToPx(this, 480)));
         recyclerView.setAdapter(mAdapter);
+        bindQuickFilters();
         mMultiSelectionView = findViewById(R.id.selection_view);
         mMultiSelectionView.setOnItemSelectedListener(this);
         mMultiSelectionView.setOnSelectionModeChangeListener(this);
@@ -271,6 +280,7 @@ public class MainActivity extends BaseActivity implements SwipeRefreshLayout.OnR
         viewModel.getApplicationItems().observe(this, applicationItems -> {
             if (mAdapter != null) {
                 mAdapter.setDefaultList(applicationItems);
+                updateQuickFilters(applicationItems.size());
             }
         });
         viewModel.getRefreshState().observe(this, status -> {
@@ -300,6 +310,67 @@ public class MainActivity extends BaseActivity implements SwipeRefreshLayout.OnR
                 UIUtils.displayLongToast(R.string.failed);
             }
         });
+    }
+
+    private void showListOptions() {
+        if (viewModel == null) return;
+        MainListOptions listOptions = new MainListOptions();
+        listOptions.setListOptionActions(viewModel);
+        listOptions.show(getSupportFragmentManager(), MainListOptions.TAG);
+    }
+
+    private void bindQuickFilters() {
+        mQuickAll = findViewById(R.id.amui03c_all);
+        mQuickUser = findViewById(R.id.amui03c_user);
+        mQuickSystem = findViewById(R.id.amui03c_system);
+        mQuickFrozen = findViewById(R.id.amui03c_frozen);
+        mQuickBackedUp = findViewById(R.id.amui03c_backed_up);
+        mQuickAdvanced = findViewById(R.id.amui03c_advanced);
+        mDisplayMode = findViewById(R.id.amui03c_display_mode);
+        mListSummary = findViewById(R.id.amui03c_summary);
+        mQuickAll.setOnClickListener(v -> {
+            viewModel.clearListFilters();
+            updateQuickFilters();
+        });
+        mQuickUser.setOnClickListener(v -> changeQuickFilter(MainListOptions.FILTER_USER_APPS, mQuickUser));
+        mQuickSystem.setOnClickListener(v -> changeQuickFilter(MainListOptions.FILTER_SYSTEM_APPS, mQuickSystem));
+        mQuickFrozen.setOnClickListener(v -> changeQuickFilter(MainListOptions.FILTER_FROZEN_APPS, mQuickFrozen));
+        mQuickBackedUp.setOnClickListener(v -> changeQuickFilter(MainListOptions.FILTER_APPS_WITH_BACKUPS, mQuickBackedUp));
+        mQuickAdvanced.setOnClickListener(v -> showListOptions());
+        mDisplayMode.setOnClickListener(v -> {
+            boolean detailed = !mAdapter.isDetailedMode();
+            mAdapter.setDetailedMode(detailed);
+            getPreferences(Context.MODE_PRIVATE).edit().putBoolean("amui03c_detailed", detailed).apply();
+            updateQuickFilters();
+        });
+        updateQuickFilters(0);
+    }
+
+    private void changeQuickFilter(@MainListOptions.Filter int flag, @NonNull Chip chip) {
+        if (viewModel == null) return;
+        viewModel.setQuickFilterFlag(flag, chip.isChecked());
+        updateQuickFilters();
+    }
+
+    private void updateQuickFilters() {
+        updateQuickFilters(mAdapter != null ? mAdapter.getItemCount() : 0);
+    }
+
+    private void updateQuickFilters(int visibleCount) {
+        if (viewModel == null || mAdapter == null || mQuickAll == null) return;
+        mQuickUser.setChecked(viewModel.hasFilterFlag(MainListOptions.FILTER_USER_APPS));
+        mQuickSystem.setChecked(viewModel.hasFilterFlag(MainListOptions.FILTER_SYSTEM_APPS));
+        mQuickFrozen.setChecked(viewModel.hasFilterFlag(MainListOptions.FILTER_FROZEN_APPS));
+        mQuickBackedUp.setChecked(viewModel.hasFilterFlag(MainListOptions.FILTER_APPS_WITH_BACKUPS));
+        mQuickAll.setChecked(!viewModel.hasActiveListFilters());
+        boolean advanced = viewModel.hasAdvancedListFilters();
+        mQuickAdvanced.setText(advanced ? R.string.amui03c_advanced_active : R.string.amui03c_advanced);
+        mDisplayMode.setChecked(mAdapter.isDetailedMode());
+        mDisplayMode.setText(mAdapter.isDetailedMode() ? R.string.amui03c_detailed : R.string.amui03c_compact);
+        mListSummary.setText(getString(R.string.amui03c_results_summary,
+                visibleCount, viewModel.getApplicationItemCount()));
+        mListSummary.setContentDescription(getString(R.string.amui03c_results_summary,
+                visibleCount, viewModel.getApplicationItemCount()));
     }
 
     @Override
@@ -335,9 +406,7 @@ public class MainActivity extends BaseActivity implements SwipeRefreshLayout.OnR
             helpIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
             startActivity(helpIntent);
         } else if (id == R.id.action_list_options) {
-            MainListOptions listOptions = new MainListOptions();
-            listOptions.setListOptionActions(viewModel);
-            listOptions.show(getSupportFragmentManager(), MainListOptions.TAG);
+            showListOptions();
         } else if (id == R.id.action_refresh) {
             if (viewModel != null) {
                 viewModel.refreshApplications("menu");
@@ -551,6 +620,7 @@ public class MainActivity extends BaseActivity implements SwipeRefreshLayout.OnR
     protected void onResume() {
         super.onResume();
         if (viewModel != null) viewModel.onResume();
+        updateQuickFilters();
         if (mAdapter != null && mBatchOpsHandler != null && mAdapter.isInSelectionMode()) {
             mBatchOpsHandler.updateConstraints();
             mMultiSelectionView.updateCounter(false);
