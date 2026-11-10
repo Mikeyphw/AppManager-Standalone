@@ -193,3 +193,32 @@ assert len(hashes)==3,'AMUI04B_DUPLICATE_VIEWPORT_IMAGES'
 print('AMUI04B_PNG_GEOMETRY_SHA256_PASS',3)
 PYPIXELS
 printf 'AMUI04B_HOSTED_VIEWPORT_PASS api=%s sha=%s\n' "$api" "$GITHUB_SHA"
+# AMUI-04C: actual MainViewModel epoch/lifecycle races (no app package mutation).
+# This executes only on the existing hosted API35/API36 full-device gate.
+race_report="$RUNNER_TEMP/amui04c-api${api}.json"
+race_log="$RUNNER_TEMP/amui04c-api${api}.log"
+set +e
+python3 -B -m devtool.android_instrumentation "$PWD" --target app \
+  --class io.github.muntashirakon.AppManager.main.Amui04CLifecycleRaceInstrumentedTest \
+  --report "$race_report" 2>&1 | tee "$race_log"
+race_rc="${PIPESTATUS[0]}"
+set -e
+python3 -B - "$race_report" "$race_rc" "$api" <<'PYRACE'
+import json,os,sys
+from pathlib import Path
+p=Path(sys.argv[1]); rc=int(sys.argv[2]); api=int(sys.argv[3])
+assert p.is_file(), 'AMUI04C_MISSING_HOSTED_RECEIPT'
+receipt=json.loads(p.read_text(encoding='utf-8'))
+assert rc==0 and receipt.get('returncode')==0, receipt
+assert receipt.get('status') in ('success','passed'), receipt
+assert int(receipt.get('executed',0)) >= 7, receipt
+assert int(receipt.get('passed',0)) >= 7, receipt
+assert int(receipt.get('failed',1)) == 0, receipt
+sha=os.environ.get('GITHUB_SHA','').strip()
+assert len(sha)==40 and all(c in '0123456789abcdef' for c in sha), 'AMUI04C_NO_EXACT_SHA'
+receipt['amui04c_commit']=sha
+receipt['amui04c_api']=api
+receipt['amui04c_scope']='real ViewModel publication epochs, rapid invalidation and immutable status; no package mutation'
+p.write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+print('AMUI04C_HOSTED_RACE_PASS',api,sha)
+PYRACE

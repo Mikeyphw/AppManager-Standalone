@@ -498,8 +498,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     }
 
     @WorkerThread
-    private void publishVisibleItems(@NonNull List<ApplicationItem> items) {
-        long epoch = mListEpoch.get();
+    private void publishVisibleItems(@NonNull List<ApplicationItem> items, long filterEpoch) {
+        // The epoch belongs to the filter task, not the eventual publisher.
+        final long epoch = filterEpoch;
         ArrayList<ApplicationItem> snapshot = new ArrayList<>(items.size());
         for (ApplicationItem item : items) snapshot.add(item.snapshotForList());
         AppListSyncStatus complete = mPendingCompletion;
@@ -529,7 +530,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     }
 
     @WorkerThread
-    private void filterItemsByQuery(@NonNull List<ApplicationItem> applicationItems) {
+    private void filterItemsByQuery(@NonNull List<ApplicationItem> applicationItems, long filterEpoch) {
         List<ApplicationItem> filteredApplicationItems;
         if (mSearchType == AdvancedSearchView.SEARCH_TYPE_REGEX) {
             filteredApplicationItems = AdvancedSearchView.matches(mSearchQuery, applicationItems,
@@ -537,7 +538,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                         add(item.packageName);
                         add(item.label);
                     }}, AdvancedSearchView.SEARCH_TYPE_REGEX);
-            publishVisibleItems(filteredApplicationItems);
+            publishVisibleItems(filteredApplicationItems, filterEpoch);
             return;
         }
         // Others
@@ -556,12 +557,14 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 filteredApplicationItems.add(item);
             }
         }
-        publishVisibleItems(filteredApplicationItems);
+        publishVisibleItems(filteredApplicationItems, filterEpoch);
     }
 
     @WorkerThread
     @GuardedBy("applicationItems")
     private void filterItemsByFlags() {
+        // Capture before reading any filter input. A newer UI change invalidates this snapshot.
+        final long filterEpoch = mListEpoch.get();
         synchronized (mApplicationItems) {
             List<ApplicationItem> candidateApplicationItems = new ArrayList<>();
             FilterItem profileFilterItem = null;
@@ -595,9 +598,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             // Other filters
             if (profileFilterItem == null && mFilterFlags == MainListOptions.FILTER_NO_FILTER) {
                 if (!TextUtils.isEmpty(mSearchQuery)) {
-                    filterItemsByQuery(candidateApplicationItems);
+                    filterItemsByQuery(candidateApplicationItems, filterEpoch);
                 } else {
-                    publishVisibleItems(candidateApplicationItems);
+                    publishVisibleItems(candidateApplicationItems, filterEpoch);
                 }
             } else {
                 List<ApplicationItem> filteredApplicationItems = new ArrayList<>();
@@ -661,9 +664,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     filteredApplicationItems.add(item);
                 }
                 if (!TextUtils.isEmpty(mSearchQuery)) {
-                    filterItemsByQuery(filteredApplicationItems);
+                    filterItemsByQuery(filteredApplicationItems, filterEpoch);
                 } else {
-                    publishVisibleItems(filteredApplicationItems);
+                    publishVisibleItems(filteredApplicationItems, filterEpoch);
                 }
             }
         }

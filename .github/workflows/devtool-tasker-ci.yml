@@ -45,6 +45,7 @@ jobs:
           python3 scripts/devtool/check_amui03c_consolidated.py --check
           python3 scripts/devtool/check_amui04a_visual_gate.py --check
           python3 scripts/devtool/check_amui04b_viewport_stress.py --check
+          python3 scripts/devtool/check_amui04c_refresh_races.py --check
           python3 scripts/devtool/check_amt05d_contract.py --check
           python3 scripts/devtool/check_amt06a_contract.py --check
           python3 scripts/devtool/check_amt06b_contract.py --check
@@ -291,6 +292,8 @@ jobs:
             ${{ runner.temp }}/amui04b-api*.log
             ${{ runner.temp }}/amui04b-screenshots-api*/**
             ${{ runner.temp }}/amui04b-screenshots-api*.sha256
+            ${{ runner.temp }}/amui04c-api*.json
+            ${{ runner.temp }}/amui04c-api*.log
             ${{ runner.temp }}/amui01-*.log
           if-no-files-found: warn
           retention-days: 7
@@ -416,6 +419,8 @@ jobs:
             ${{ runner.temp }}/amui04b-api*.log
             ${{ runner.temp }}/amui04b-screenshots-api*/**
             ${{ runner.temp }}/amui04b-screenshots-api*.sha256
+            ${{ runner.temp }}/amui04c-api*.json
+            ${{ runner.temp }}/amui04c-api*.log
             ${{ runner.temp }}/amui01-*.log
           if-no-files-found: error
           retention-days: 7
