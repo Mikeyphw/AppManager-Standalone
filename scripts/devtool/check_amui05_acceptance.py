@@ -58,6 +58,23 @@ def validate(src):
     must('bash scripts/devtool/amui05_hosted_acceptance.sh' in accept,'hosted emulator runner absent')
     must(accept.count('bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c')==2,'pinned devtool removed')
     must('python3 -m pip install "$RUNNER_TEMP/devtool-source"' in accept,'hosted devtool not installed')
+    # HF02: source contract enforces exact Android native toolchain provisioning
+    # before the pinned Devtool and before an emulator can issue any receipt.
+    sdk_packages="sdkmanager --install 'platforms;android-36' 'build-tools;36.1.0' 'platform-tools' 'cmake;3.22.1' 'ndk;27.0.12077973'"
+    must(accept.count('uses: android-actions/setup-android@v4')==1 and
+         accept.count(sdk_packages)==1,'AMUI05 source matrix missing exact SDK/NDK/CMake provisioning')
+    for executable in ('ndk/27.0.12077973/ndk-build',
+                       'ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang',
+                       'cmake/3.22.1/bin/cmake', 'cmake/3.22.1/bin/ninja',
+                       'build-tools/36.1.0/aapt'):
+        must(accept.count('test -x "$sdk/'+executable+'"')==1,
+             'AMUI05 missing pinned native executable check '+executable)
+    must(accept.index('uses: android-actions/setup-android@v4') <
+         accept.index(sdk_packages) < accept.index('Install pinned Devtool (hosted only)') <
+         accept.index('Hosted exact-API Android instrumentation'),
+         'AMUI05 native provisioning order unsafe')
+    must('AMUI05_SDK_NDK_CMAKE_READY' in accept and '|| true' not in accept,
+         'AMUI05 native toolchain provisioning must fail closed')
     must('[[ -r /dev/kvm && -w /dev/kvm ]]' in accept,'hardware acceleration guard removed')
     s=src[RUNNER]
     must('AMUI05_EXPECT_API' in s and '30 || "$api" == 35 || "$api" == 36' in s,
@@ -66,6 +83,11 @@ def validate(src):
          "r.get('skipped',1))==0" in s,'device receipt fail-closed floor weakened')
     must('AMUI05_NOT_A_DISPOSABLE_EMULATOR' in s and 'ranchu' in s and 'goldfish' in s,
          'wallpaper must never touch a personal physical device')
+    must('AMUI05_HOSTED_PINNED_NATIVE_TOOLCHAIN_NOT_READY' in s and
+         'ndk/27.0.12077973/ndk-build' in s and 'cmake/3.22.1/bin/ninja' in s and
+         'cmake/3.22.1/bin/cmake' in s and
+         'toolchains/llvm/prebuilt/linux-x86_64/bin/clang' in s,
+         'AMUI05 hosted runner missing strict native toolchain preflight')
     must('Amui05CompatibilityInstrumentedTest' in s and
          'Amui05WallpaperInstrumentedTest' in s,'both real test classes must run')
     must('accept io.github.muntashirakon.AppManager.utils.appearance.Amui05CompatibilityInstrumentedTest compatibility 7' in s,

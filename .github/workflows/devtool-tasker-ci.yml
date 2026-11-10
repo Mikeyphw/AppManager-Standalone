@@ -454,6 +454,24 @@ jobs:
         with:
           distribution: zulu
           java-version: '21'
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: 'platform-tools'
+      - name: Provision pinned Android SDK / NDK / CMake for AMUI05
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.1.0' 'platform-tools' 'cmake;3.22.1' 'ndk;27.0.12077973'
+          sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+          [[ -n "$sdk" && -d "$sdk" ]] || { echo 'AMUI05_SDK_ROOT_MISSING' >&2; exit 1; }
+          test -f "$sdk/ndk/27.0.12077973/source.properties"
+          test -x "$sdk/ndk/27.0.12077973/ndk-build"
+          test -x "$sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
+          test -f "$sdk/cmake/3.22.1/source.properties"
+          test -x "$sdk/cmake/3.22.1/bin/cmake"
+          test -x "$sdk/cmake/3.22.1/bin/ninja"
+          test -x "$sdk/build-tools/36.1.0/aapt"
+          printf 'AMUI05_SDK_NDK_CMAKE_READY api=%s\n' '${{ matrix.api }}'
       - name: Install pinned Devtool (hosted only)
         shell: bash
         run: |

@@ -34,6 +34,25 @@
 
 A green AMUI05 hosted matrix means *older API fallback and disposable-emulator wallpaper sources are tested*, not full app screen visual parity or physical ARM64 acceptance. Do not merge PR #4, claim production release readiness, or unpause Tasker work because of synthetic screenshots, a static XML audit or an inspected-only physical handset. Screen-by-screen and actual usage must be reviewed. The ledger intentionally begins PENDING for all 82 cases.
 
+## HF03: recover hosted native toolchain and scoped test anchors (2026-11-10)
+
+Manual instrumentation run **42865440211** failed on Android 11 (API30), 15 (API35)
+ and 16 (API36) before **any Android test ran**. All three device receipts
+ reported `device-readiness`: exact NDK 27.0.12077973 and CMake 3.22.1/Ninja
+ were not installed in the new AMUI05 matrix job. The earlier AMUI04D
+ qualified 5/5 run 42850475422 remains unchanged and is not evidence for
+ acceptance of the subsequent AMUI05 commit.
+
+HF03 adds `android-actions/setup-android@v4`, installs the exact platform,
+ build-tools, NDK and CMake packages already required by the established
+ Android15/16 jobs, verifies the native compiler, `ndk-build`, `cmake`,
+ `ninja`, and `aapt` *before* launching the emulator. The hosted wrapper also
+ checks these native binaries fail-closed before calling instrumentation.
+ The new Python launcher verifies exact failed-run identity, retains
+ its SHA/run ID as historical evidence, and creates no duplicate dispatch.
+ GitHub-hosted results and manual/physical acceptance remain pending until
+ real checks pass; never call SDK readiness an app UI acceptance pass.
+
 ## HF01: API36 legacy mutation contract and new-job isolation
 
 The full 707-test Devtool validation originally refused before commit because

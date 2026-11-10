@@ -4,6 +4,13 @@ set -Eeuo pipefail
 : "${RUNNER_TEMP:?GitHub-hosted runner required}"
 : "${JAVA_HOME:?Host JDK21 required}"
 : "${GITHUB_SHA:?Exact source SHA required}"
+sdk="${ANDROID_HOME:-${ANDROID_SDK_ROOT:-}}"
+[[ -n "$sdk" && -d "$sdk" && -x "$sdk/ndk/27.0.12077973/ndk-build" &&
+   -x "$sdk/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang" &&
+   -x "$sdk/cmake/3.22.1/bin/cmake" && -x "$sdk/cmake/3.22.1/bin/ninja" ]] || {
+  echo 'AMUI05_HOSTED_PINNED_NATIVE_TOOLCHAIN_NOT_READY' >&2
+  exit 1
+}
 repo="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd -P)"
 cd -- "$repo"
 api="$(adb shell getprop ro.build.version.sdk | tr -d '\r')"
