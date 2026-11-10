@@ -23,6 +23,13 @@ def validate(src):
     def must(ok,reason):
         if not ok: raise AssertionError('AMUI03C_REFUSED: '+reason)
     a,vm,d=src[ACT],src[VM],src[ADAP]
+    # HF01: UiThread is a method annotation, never a field annotation.
+    # The previous overlay moved the original method annotation onto the new
+    # mDetailedMode field, and Android javac correctly refused compilation.
+    must('    @UiThread\n    void setDefaultList(List<ApplicationItem> list) {' in d,
+         'UiThread must directly annotate the adapter list method')
+    must('    @UiThread\n    private boolean mDetailedMode;' not in d,
+         'UiThread illegally applied to mDetailedMode field')
     layout=ET.fromstring(src[LAYOUT]); quick=ET.fromstring(src[QUICK])
     ET.fromstring(src[STR])
     must(sum(1 for n in layout.iter() if n.get('layout')=='@layout/amui03c_quick_filters')==1,

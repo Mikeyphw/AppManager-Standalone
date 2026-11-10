@@ -122,7 +122,6 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<ApplicationI
         mQueryStringHighlight = ColorCodes.getQueryStringHighlightColor(activity);
     }
 
-    @UiThread
     private boolean mDetailedMode;
 
     boolean isDetailedMode() {
@@ -137,6 +136,7 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<ApplicationI
         notifyDataSetChanged();
     }
 
+    @UiThread
     void setDefaultList(List<ApplicationItem> list) {
         if (mActivity.viewModel == null) return;
         String oldSearchQuery = mSearchQuery;

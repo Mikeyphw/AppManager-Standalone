@@ -37,6 +37,14 @@ class ConsolidatedListContracts(unittest.TestCase):
     def test_no_mode_persistence(self):self.reject(ACT,'getPreferences(Context.MODE_PRIVATE).edit().putBoolean("amui03c_detailed", detailed).apply();','')
     def test_no_restore_mode(self):self.reject(ACT,'getPreferences(Context.MODE_PRIVATE).getBoolean("amui03c_detailed", false)','false')
     def test_no_rebind(self):self.reject(ADAP,'notifyDataSetChanged();','')
+    def test_missing_ui_thread_method_annotation(self):
+        self.reject(ADAP, '    @UiThread\n    void setDefaultList(List<ApplicationItem> list) {',
+                    '    void setDefaultList(List<ApplicationItem> list) {')
+
+    def test_illegal_ui_thread_field_annotation(self):
+        self.reject(ADAP, '    private boolean mDetailedMode;',
+                    '    @UiThread\n    private boolean mDetailedMode;')
+
     def test_no_hide_date(self):self.reject(ADAP,'holder.date.setVisibility(mDetailedMode ? View.VISIBLE : View.GONE);','')
     def test_no_hide_uid(self):self.reject(ADAP,'holder.userId.setVisibility(mDetailedMode ? View.VISIBLE : View.GONE);','')
     def test_no_current_item_routing(self):self.reject(ADAP,'handleClick(getItem(currentPos));','handleClick(item);')
