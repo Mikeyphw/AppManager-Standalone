@@ -222,3 +222,32 @@ receipt['amui04c_scope']='real ViewModel publication epochs, rapid invalidation 
 p.write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n',encoding='utf-8')
 print('AMUI04C_HOSTED_RACE_PASS',api,sha)
 PYRACE
+# AMUI-04D: final read-only identity, package-event, list and semantic-theme acceptance.
+# Existing AMUI-01 real disposable package lifecycle, AMT and AMUI04A/B/C gates precede it.
+final_report="$RUNNER_TEMP/amui04d-api${api}.json"
+final_log="$RUNNER_TEMP/amui04d-api${api}.log"
+set +e
+python3 -B -m devtool.android_instrumentation "$PWD" --target app \
+  --class io.github.muntashirakon.AppManager.main.Amui04DFinalAcceptanceInstrumentedTest \
+  --report "$final_report" 2>&1 | tee "$final_log"
+final_rc="${PIPESTATUS[0]}"
+set -e
+python3 -B - "$final_report" "$final_rc" "$api" <<'PYFINAL'
+import json,os,sys
+from pathlib import Path
+p=Path(sys.argv[1]);rc=int(sys.argv[2]);api=int(sys.argv[3])
+assert p.is_file(),'AMUI04D_NO_DEVICE_RECEIPT'
+receipt=json.loads(p.read_text(encoding='utf-8'))
+assert rc==0 and receipt.get('returncode')==0,receipt
+assert receipt.get('status') in ('success','passed'),receipt
+assert int(receipt.get('executed',0))>=10,receipt
+assert int(receipt.get('passed',0))>=10,receipt
+assert int(receipt.get('failed',1))==0,receipt
+sha=os.environ.get('GITHUB_SHA','').strip()
+assert len(sha)==40 and all(c in '0123456789abcdef' for c in sha),'AMUI04D_NO_EXACT_SHA'
+receipt['amui04d_commit']=sha
+receipt['amui04d_api']=api
+receipt['amui04d_scope']='read-only real installed debug app identity, exact package event parsing, immutable list, first resume, semantic palette'
+p.write_text(json.dumps(receipt,indent=2,sort_keys=True)+'\n',encoding='utf-8')
+print('AMUI04D_HOSTED_FINAL_PASS',api,sha)
+PYFINAL
