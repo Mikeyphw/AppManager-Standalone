@@ -215,7 +215,8 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<ApplicationI
                 AccessibilityUtils.requestAccessibilityFocus(holder.itemView);
                 return;
             }
-            handleClick(item);
+            // Resolve the live item after DiffUtil changes; never route a stale row.
+            handleClick(getItem(currentPos));
         });
         cardView.setOnLongClickListener(v -> {
             int currentPos = holder.getBindingAdapterPosition();

@@ -52,7 +52,7 @@ def validate(sources:dict[str,str])->bool:
     for marker in ('LayoutInflater.from(parent.getContext()).inflate(R.layout.item_main, parent, false)',
                    'cardView.setOnClickListener(', 'cardView.setOnLongClickListener(',
                    'holder.icon.setOnClickListener(', 'toggleSelection(currentPos);',
-                   'handleClick(item);', 'cardView.setStrokeColor(',
+                   'handleClick(getItem(currentPos));', 'cardView.setStrokeColor(',
                    'getItem(position).hashCode()', 'notifySelectionChange();',
                    'mActivity.viewModel.select(', 'mActivity.viewModel.deselect('):
         must(marker in a,'AMUI-01 interaction/binding anchor lost: '+marker)

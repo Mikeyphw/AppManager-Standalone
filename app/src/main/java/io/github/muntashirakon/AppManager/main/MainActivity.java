@@ -91,6 +91,7 @@ import io.github.muntashirakon.dialog.SearchableSingleChoiceDialogBuilder;
 import io.github.muntashirakon.io.Paths;
 import io.github.muntashirakon.multiselection.MultiSelectionActionsView;
 import io.github.muntashirakon.util.UiUtils;
+import io.github.muntashirakon.view.AutoFitGridLayoutManager;
 import io.github.muntashirakon.widget.MultiSelectionView;
 import io.github.muntashirakon.widget.SwipeRefreshLayout;
 
@@ -238,7 +239,8 @@ public class MainActivity extends BaseActivity implements SwipeRefreshLayout.OnR
 
         mAdapter = new MainRecyclerAdapter(MainActivity.this);
         mAdapter.setHasStableIds(true);
-        recyclerView.setLayoutManager(UIUtils.getGridLayoutAt450Dp(this));
+        // Keep full metadata readable: columns resize when window width changes.
+        recyclerView.setLayoutManager(new AutoFitGridLayoutManager(this, UiUtils.dpToPx(this, 480)));
         recyclerView.setAdapter(mAdapter);
         mMultiSelectionView = findViewById(R.id.selection_view);
         mMultiSelectionView.setOnItemSelectedListener(this);
