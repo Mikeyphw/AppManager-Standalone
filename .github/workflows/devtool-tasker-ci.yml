@@ -42,6 +42,7 @@ jobs:
           python3 scripts/devtool/check_amt05b_contract.py --check
           python3 scripts/devtool/check_amt05c_contract.py --check
           python3 scripts/devtool/check_amui03b_hf03_contracts.py --check
+          python3 scripts/devtool/check_amui03c_consolidated.py --check
           python3 scripts/devtool/check_amt05d_contract.py --check
           python3 scripts/devtool/check_amt06a_contract.py --check
           python3 scripts/devtool/check_amt06b_contract.py --check
@@ -278,6 +279,8 @@ jobs:
             ${{ runner.temp }}/amt03-instrumentation.log
             ${{ runner.temp }}/amui01-*.json
             ${{ runner.temp }}/amui02-*.json
+            ${{ runner.temp }}/amui03c-ui-*.json
+            ${{ runner.temp }}/amui03c-ui-*.log
             ${{ runner.temp }}/amui01-*.log
           if-no-files-found: warn
           retention-days: 7
@@ -393,6 +396,8 @@ jobs:
           path: |
             ${{ runner.temp }}/amui01-*.json
             ${{ runner.temp }}/amui02-*.json
+            ${{ runner.temp }}/amui03c-ui-*.json
+            ${{ runner.temp }}/amui03c-ui-*.log
             ${{ runner.temp }}/amui01-*.log
           if-no-files-found: error
           retention-days: 7

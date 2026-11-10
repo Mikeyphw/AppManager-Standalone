@@ -1,0 +1,80 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- AMUI03C: horizontal filter controls; no profile or package writes. -->
+<androidx.appcompat.widget.LinearLayoutCompat xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:paddingVertical="3dp">
+    <HorizontalScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:fillViewport="false"
+        android:scrollbars="none">
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/amui03c_chips"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:paddingHorizontal="8dp"
+            app:singleLine="true"
+            app:singleSelection="false">
+            <com.google.android.material.chip.Chip
+                android:id="@+id/amui03c_all"
+                style="@style/Widget.AppTheme.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/amui03c_all"
+                android:checkable="true" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/amui03c_user"
+                style="@style/Widget.AppTheme.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_user_apps"
+                android:checkable="true" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/amui03c_system"
+                style="@style/Widget.AppTheme.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_system_apps"
+                android:checkable="true" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/amui03c_frozen"
+                style="@style/Widget.AppTheme.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_frozen_apps"
+                android:checkable="true" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/amui03c_backed_up"
+                style="@style/Widget.AppTheme.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/filter_apps_with_backups"
+                android:checkable="true" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/amui03c_advanced"
+                style="@style/Widget.AppTheme.Chip.Assist"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/amui03c_advanced"
+                android:checkable="false" />
+            <com.google.android.material.chip.Chip
+                android:id="@+id/amui03c_display_mode"
+                style="@style/Widget.AppTheme.Chip.Filter"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="@string/amui03c_compact"
+                android:checkable="true" />
+        </com.google.android.material.chip.ChipGroup>
+    </HorizontalScrollView>
+    <androidx.appcompat.widget.AppCompatTextView
+        android:id="@+id/amui03c_summary"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        android:paddingVertical="1dp"
+        android:text="@string/amui03c_initial_summary"
+        android:textAppearance="?attr/textAppearanceLabelSmall" />
+</androidx.appcompat.widget.LinearLayoutCompat>

@@ -38,3 +38,28 @@ receipt['amui02_scope']='real dynamic theme resources; settings restored after t
 p.write_text(json.dumps(receipt,indent=2)+'\n')
 print('AMUI02_HOSTED_THEME_PASS',api,receipt['amui02_commit'])
 PY
+# AMUI-03C: read-only quick filter/density instrumentation on both API 35 and 36.
+quick_report="$RUNNER_TEMP/amui03c-ui-api${api}.json"
+quick_log="$RUNNER_TEMP/amui03c-ui-api${api}.log"
+set +e
+python3 -B -m devtool.android_instrumentation "$PWD" --target app \
+  --class io.github.muntashirakon.AppManager.main.Amui03CQuickFiltersInstrumentedTest \
+  --report "$quick_report" 2>&1 | tee "$quick_log"
+quick_rc="${PIPESTATUS[0]}"
+set -e
+python3 -B - "$quick_report" "$quick_rc" "$api" <<'PY'
+import json,sys,os
+from pathlib import Path
+p=Path(sys.argv[1]); rc=int(sys.argv[2]); api=int(sys.argv[3])
+assert p.is_file(), 'AMUI03C_MISSING_HOSTED_DEVICE_RECEIPT'
+receipt=json.loads(p.read_text())
+assert rc==0 and receipt.get('returncode')==0, receipt
+assert receipt.get('status') in ('success','passed'), receipt
+assert int(receipt.get('executed',0)) >= 3, receipt
+assert int(receipt.get('passed',0)) >= 3 and int(receipt.get('failed',1))==0, receipt
+receipt['amui03c_commit']=os.environ.get('GITHUB_SHA','')
+receipt['amui03c_api']=api
+receipt['amui03c_scope']='read-only quick filter and compact-list UI inflation'
+p.write_text(json.dumps(receipt,indent=2)+'\n')
+print('AMUI03C_HOSTED_UI_PASS',api,receipt['amui03c_commit'])
+PY

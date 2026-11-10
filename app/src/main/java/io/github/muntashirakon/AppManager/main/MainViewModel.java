@@ -286,6 +286,51 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         return (mFilterFlags & flag) != 0;
     }
 
+    private static final int AMUI03C_QUICK_FLAGS = MainListOptions.FILTER_USER_APPS
+            | MainListOptions.FILTER_SYSTEM_APPS | MainListOptions.FILTER_FROZEN_APPS
+            | MainListOptions.FILTER_APPS_WITH_BACKUPS;
+
+    /** Update one quick-filter atomically; retain every unrelated advanced flag. */
+    public void setQuickFilterFlag(@MainListOptions.Filter int flag, boolean checked) {
+        if (Integer.bitCount(flag) != 1 || (flag & AMUI03C_QUICK_FLAGS) != flag) {
+            throw new IllegalArgumentException("Unsupported quick filter");
+        }
+        int next = checked ? mFilterFlags | flag : mFilterFlags & ~flag;
+        if (checked && flag == MainListOptions.FILTER_USER_APPS) {
+            next &= ~MainListOptions.FILTER_SYSTEM_APPS;
+        } else if (checked && flag == MainListOptions.FILTER_SYSTEM_APPS) {
+            next &= ~MainListOptions.FILTER_USER_APPS;
+        }
+        if (next == mFilterFlags) return;
+        mFilterFlags = next;
+        Prefs.MainPage.setFilters(next);
+        cancelIfRunning();
+        mFilterResult = mListExecutor.submit(this::filterItemsByFlags);
+    }
+
+    /** Clear all list-scope filters, not the user's advanced search query or sort order. */
+    public void clearListFilters() {
+        if (mFilterFlags == MainListOptions.FILTER_NO_FILTER
+                && mFilterProfileName == null && mSelectedUsers == null) return;
+        mFilterFlags = MainListOptions.FILTER_NO_FILTER;
+        mFilterProfileName = null;
+        mSelectedUsers = null;
+        Prefs.MainPage.setFilters(mFilterFlags);
+        Prefs.MainPage.setFilteredProfileName(null);
+        cancelIfRunning();
+        mFilterResult = mListExecutor.submit(this::filterItemsByFlags);
+    }
+
+    public boolean hasActiveListFilters() {
+        return mFilterFlags != MainListOptions.FILTER_NO_FILTER
+                || mFilterProfileName != null || mSelectedUsers != null;
+    }
+
+    public boolean hasAdvancedListFilters() {
+        return (mFilterFlags & ~AMUI03C_QUICK_FLAGS) != 0
+                || mFilterProfileName != null || mSelectedUsers != null;
+    }
+
     @Override
     public void addFilterFlag(@MainListOptions.Filter int filterFlag) {
         mFilterFlags |= filterFlag;

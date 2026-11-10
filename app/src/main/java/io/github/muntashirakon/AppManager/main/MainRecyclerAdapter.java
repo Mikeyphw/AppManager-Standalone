@@ -7,6 +7,7 @@ import static io.github.muntashirakon.AppManager.utils.UIUtils.displayLongToast;
 import static io.github.muntashirakon.AppManager.utils.UIUtils.displayShortToast;
 import static io.github.muntashirakon.util.AdapterUtils.PAYLOAD_HIGHLIGHT_CHANGED;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ApplicationInfo;
@@ -122,6 +123,20 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<ApplicationI
     }
 
     @UiThread
+    private boolean mDetailedMode;
+
+    boolean isDetailedMode() {
+        return mDetailedMode;
+    }
+
+    @SuppressLint("NotifyDataSetChanged")
+    void setDetailedMode(boolean detailed) {
+        if (mDetailedMode == detailed) return;
+        mDetailedMode = detailed;
+        // Rebind existing snapshots; do not change selection, sorting, filters or app data.
+        notifyDataSetChanged();
+    }
+
     void setDefaultList(List<ApplicationItem> list) {
         if (mActivity.viewModel == null) return;
         String oldSearchQuery = mSearchQuery;
@@ -370,6 +385,17 @@ public class MainRecyclerAdapter extends MultiSelectionView.Adapter<ApplicationI
             holder.backupInfoExt.setText(item.backupFlagsStr);
         } else {
             holder.backupIndicator.setVisibility(View.GONE);
+            holder.backupInfo.setVisibility(View.GONE);
+            holder.backupInfoExt.setVisibility(View.GONE);
+        }
+        // All adapter-bound fields remain in the row and retain their live values.
+        // Detailed rebind restores only fields that are valid for this item.
+        holder.date.setVisibility(mDetailedMode ? View.VISIBLE : View.GONE);
+        holder.userId.setVisibility(mDetailedMode ? View.VISIBLE : View.GONE);
+        holder.size.setVisibility(mDetailedMode ? View.VISIBLE : View.GONE);
+        if (!mDetailedMode) {
+            holder.issuer.setVisibility(View.GONE);
+            holder.sha.setVisibility(View.GONE);
             holder.backupInfo.setVisibility(View.GONE);
             holder.backupInfoExt.setVisibility(View.GONE);
         }

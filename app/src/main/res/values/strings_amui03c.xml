@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="amui03c_all">All filters</string>
+    <string name="amui03c_compact">Compact</string>
+    <string name="amui03c_detailed">Detailed</string>
+    <string name="amui03c_advanced">More filters</string>
+    <string name="amui03c_advanced_active">More filters • active</string>
+    <string name="amui03c_initial_summary">App list</string>
+    <string name="amui03c_results_summary">%1$d shown of %2$d apps</string>
+</resources>

@@ -23,6 +23,8 @@
             app:navigationIcon="@null"
             tools:menu="@menu/activity_main_actions" />
 
+        <include layout="@layout/amui03c_quick_filters" />
+
         <com.google.android.material.progressindicator.LinearProgressIndicator
             android:id="@+id/progress_linear"
             style="@style/Widget.AppTheme.LinearProgressIndicator"
