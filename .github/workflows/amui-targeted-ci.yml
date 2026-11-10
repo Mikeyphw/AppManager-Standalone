@@ -64,6 +64,20 @@ jobs:
           python3 -B scripts/devtool/check_amt06c_contract.py --check
           python3 -B scripts/devtool/check_amui01_contract.py --check
           python3 -B scripts/devtool/check_amui01_hf09_kvm.py --check
+          python3 -B scripts/devtool/check_automation_contract.py --check
+          python3 -B scripts/devtool/check_amt03_contract.py --check
+          python3 -B scripts/devtool/check_amt04b_contract.py --check
+          python3 -B scripts/devtool/check_amt05a_contract.py --check
+          python3 -B scripts/devtool/check_amt05b_contract.py --check
+          python3 -B scripts/devtool/check_amt05c_contract.py --check
+          python3 -B scripts/devtool/check_amt05d_contract.py --check
+          python3 -B scripts/devtool/check_amt06a_contract.py --check
+          python3 -B scripts/devtool/check_amt06b_contract.py --check
+          python3 -B scripts/devtool/check_amui01_backup_hf05.py --check
+          python3 -B scripts/devtool/check_amui01_hf08_lint.py --check
+          python3 -B -m unittest discover -s scripts/devtool -p 'test_*.py' -v
+          python3 -B scripts/devtool/check_amui03b_hf02_gate.py --check
+          python3 -B scripts/devtool/test_amui03b_hf02_gate.py
           sh -n devtoolw
       - name: Detect compile-relevant changes
         id: scope

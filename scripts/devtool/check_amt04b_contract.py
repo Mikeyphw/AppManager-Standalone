@@ -11,6 +11,7 @@ FILES=tuple(PKG/p for p in ('TaskerPackageManageWire.java','TaskerPackageManageA
             'TaskerPackageManageReceiver.java','TaskerActionReceiver.java'))+(
             Path('app/src/main/AndroidManifest.xml'),
             Path('.github/workflows/devtool-tasker-ci.yml'),
+            Path('.github/workflows/amui-targeted-ci.yml'),
             Path('app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerJournalInstrumentedTest.java'),
             Path('app/src/test/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerPackageManageTest.java'),
             Path('docs/AMT04B1_PACKAGE_MANAGE.md'))
@@ -50,7 +51,12 @@ def inspect(root=ROOT):
         'TaskerJournalInstrumentedTest.java':['testManageOwnPackageAlwaysDenied',
             'testManageUnknownOperationAlwaysDenied'],
         'devtool-tasker-ci.yml':['check_amt04b_contract.py --check',
-            'app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/**'],
+            'workflow_dispatch:', '  device-instrumentation:',
+            "inputs.mode == 'full' || inputs.mode == 'instrumentation'"],
+        'amui-targeted-ci.yml':['python3 -B scripts/devtool/check_amt04b_contract.py --check',
+            'python3 -B -m unittest discover -s scripts/devtool',
+            "branches: ['feature/amui*', feature/tasker-automation]",
+            'Scoped Android resource and Java compile (no emulator)'],
     }
     for file, markers in guards.items():
         for marker in markers:
