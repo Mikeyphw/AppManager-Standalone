@@ -17,7 +17,8 @@
             android:layout_height="wrap_content"
             android:paddingHorizontal="8dp"
             app:singleLine="true"
-            app:singleSelection="false">
+            app:singleSelection="false"
+            app:selectionRequired="false">
             <com.google.android.material.chip.Chip
                 android:id="@+id/amui03c_all"
                 style="@style/Widget.AppTheme.Chip.Filter"

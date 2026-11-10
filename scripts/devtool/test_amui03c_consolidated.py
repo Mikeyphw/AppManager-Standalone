@@ -53,6 +53,18 @@ class ConsolidatedListContracts(unittest.TestCase):
     def test_full_manual_to_push(self):self.reject(FULL,'  workflow_dispatch:', '  push:')
     def test_no_android_report(self):self.reject(SCRIPT,'AMUI03C_HOSTED_UI_PASS','AMUI03C_NOT_TESTED')
     def test_no_android_tests(self):self.reject(DEVICE,'public void allQuickFiltersInflateAndAreCheckable()', 'public void allQuickFiltersRemoved()')
+    def test_quick_toggle_must_use_android_main_thread(self):
+        self.reject(DEVICE, 'runOnMainSync(() -> {', 'runOffMainThread(() -> {')
+    def test_quick_toggle_must_verify_checked_state(self):
+        self.reject(DEVICE, 'assertTrue("Main-thread check did not stick", user.isChecked());',
+                    'assertTrue("Main-thread check did not stick", true);')
+    def test_quick_toggle_must_verify_unchecked_state(self):
+        self.reject(DEVICE, 'assertFalse("Main-thread uncheck did not stick", user.isChecked());',
+                    'assertFalse("Main-thread uncheck did not stick", true);')
+    def test_chip_group_must_allow_uncheck(self):
+        self.reject(QUICK, 'app:selectionRequired="false"', 'app:selectionRequired="true"')
+    def test_no_idle_sync_drop(self):
+        self.reject(DEVICE, 'waitForIdleSync();', '/* no idle synchronization */')
 
     def mutate_xml_chip(self, chip_name, update):
         source=dict(self.src)

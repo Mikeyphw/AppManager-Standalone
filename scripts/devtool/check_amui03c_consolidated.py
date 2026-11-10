@@ -49,6 +49,8 @@ def validate(src):
          'visible app result count missing')
     must('amui03c_chips' in nodes and nodes['amui03c_chips'].get(APP+'singleLine')=='true',
          'quick filters must scroll horizontally')
+    must(nodes['amui03c_chips'].get(APP+'selectionRequired')=='false',
+         'quick filters must permit deselection, including All/none state')
     for marker in ('bindQuickFilters();', 'mQuickAll.setOnClickListener(', 'viewModel.clearListFilters();',
                    'mQuickUser.setOnClickListener(', 'mQuickSystem.setOnClickListener(',
                    'mQuickFrozen.setOnClickListener(', 'mQuickBackedUp.setOnClickListener(',
@@ -103,6 +105,20 @@ def validate(src):
     must('Amui03CQuickFiltersInstrumentedTest' in inst and inst.count('@Test')>=3 and
          'public void allQuickFiltersInflateAndAreCheckable()' in inst,
          'device test coverage reduced')
+    # The previous test changed a detached Chip off the instrumentation UI thread.
+    # Do not satisfy this guard with runOnMainSync in an unrelated test.
+    toggle=inst.split('public void quickChipSelectionCanToggleWithoutChangingPackages()',1)
+    must(len(toggle)==2,'quick-chip device test missing')
+    body=toggle[1].split('\n    }\n',1)[0]
+    for token in ('runOnMainSync(() -> {', 'group.isSelectionRequired()',
+                  'user.isCheckable()', 'user.setChecked(true);',
+                  'user.setChecked(false);', 'assertTrue("Main-thread check did not stick", user.isChecked());',
+                  'assertFalse("Main-thread uncheck did not stick", user.isChecked());',
+                  'waitForIdleSync();'):
+        must(token in body,'real UI-thread chip toggle/unchecked assertion removed: '+token)
+    must(body.index('runOnMainSync(() -> {') < body.index('user.setChecked(true);')
+         < body.index('user.setChecked(false);') < body.index('waitForIdleSync();'),
+         'quick-chip lifecycle order weakened')
     must('Amui03CQuickFiltersInstrumentedTest' in sh and
          "int(receipt.get('passed',0)) >= 3" in sh and 'AMUI03C_HOSTED_UI_PASS' in sh,
          'Android API35/36 device receipt gate missing')

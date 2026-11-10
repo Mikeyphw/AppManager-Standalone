@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 package io.github.muntashirakon.AppManager.main;
 
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -52,11 +52,22 @@ public class Amui03CQuickFiltersInstrumentedTest {
 
     @Test
     public void quickChipSelectionCanToggleWithoutChangingPackages() {
-        View view = inflateFilters();
-        Chip user = view.findViewById(R.id.amui03c_user);
-        user.setChecked(true);
-        assertTrue(user.isChecked());
-        user.setChecked(false);
-        assertEquals(false, user.isChecked());
+        // ChipGroup uses a main-thread CheckedStateTracker. Detached, off-thread
+        // mutation is not representative of real UI interaction on API35/36.
+        InstrumentationRegistry.getInstrumentation().runOnMainSync(() -> {
+            View view = inflateFilters();
+            com.google.android.material.chip.ChipGroup group =
+                    view.findViewById(R.id.amui03c_chips);
+            assertNotNull("Chip group missing", group);
+            assertFalse("A filter must be allowed to deselect", group.isSelectionRequired());
+            Chip user = view.findViewById(R.id.amui03c_user);
+            assertNotNull("User quick chip missing", user);
+            assertTrue("User quick chip must be checkable", user.isCheckable());
+            user.setChecked(true);
+            assertTrue("Main-thread check did not stick", user.isChecked());
+            user.setChecked(false);
+            assertFalse("Main-thread uncheck did not stick", user.isChecked());
+        });
+        InstrumentationRegistry.getInstrumentation().waitForIdleSync();
     }
 }
