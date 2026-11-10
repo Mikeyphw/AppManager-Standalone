@@ -131,7 +131,7 @@ jobs:
             exit 0
           fi
           git diff --name-only "$from" "$to" > "$RUNNER_TEMP/amui-changed-files.txt"
-          if grep -Eq '^(app/src/(main|androidTest)/|libcore/ui/src/main/|libcore/[^/]+/src/main/|build.gradle|settings.gradle|gradle/|gradle.properties)' "$RUNNER_TEMP/amui-changed-files.txt"; then
+          if grep -Eq '^(app/src/(main|androidTest)/|libcore/ui/src/main/|libcore/[^/]+/src/main/|build.gradle|settings.gradle|gradle/|gradle.properties|app/build\.gradle(\.kts)?$|libcore/[^/]+/build\.gradle(\.kts)?$|\.github/workflows/|scripts/devtool/(amui|amt|check_amui|test_amui|check_amt|test_amt)|buildSrc/)' "$RUNNER_TEMP/amui-changed-files.txt"; then
             echo 'compile=true' >> "$GITHUB_OUTPUT"
           else
             echo 'compile=false' >> "$GITHUB_OUTPUT"
