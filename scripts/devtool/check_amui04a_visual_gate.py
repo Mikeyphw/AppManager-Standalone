@@ -37,10 +37,14 @@ def validate(src):
     for marker in ('Amui04AVisualInstrumentedTest', 'AMUI04A_HOSTED_VISUAL_PASS',
                    "int(receipt.get('passed', 0)) >= 5", "int(receipt.get('failed', 1)) == 0",
                    "assert p.is_file()", 'amui04a-api${api}.json',
-                   'amui04a-screenshots-api${api}', 'adb pull',
+                   'amui04a-screenshots-api${api}', 'adb pull "$device_dir/${name}.png" "$shot_dir/${name}.png"',
                    'sha256sum', 'test -s', 'AMUI04A_EXPECT_SCREENSHOT_COUNT=3',
-                   'assert len(hashes)==3'):
+                   "assert len(hashes)==3, 'AMUI04A_DUPLICATE_PALETTE_SCREENSHOTS'"):
         must(marker in runner,'hosted receipt/screenshot guard absent '+marker)
+    must(runner.count('adb pull "$device_dir/${name}.png" "$shot_dir/${name}.png"')==1,
+         'AMUI04A screenshot pull missing or duplicated')
+    must(runner.count("assert len(hashes)==3, 'AMUI04A_DUPLICATE_PALETTE_SCREENSHOTS'")==1,
+         'AMUI04A unique palette-hash guard missing or duplicated')
     must('AMUI02_HOSTED_THEME_PASS' in runner and 'AMUI03C_HOSTED_UI_PASS' in runner,
          'older hosted instrumentations removed')
     must('python3 -B scripts/devtool/check_amui04a_visual_gate.py --check' in target,
