@@ -47,6 +47,7 @@ jobs:
           python3 scripts/devtool/check_amui04b_viewport_stress.py --check
           python3 scripts/devtool/check_amui04c_refresh_races.py --check
           python3 scripts/devtool/check_amui04d_final_gate.py --check
+          python3 scripts/devtool/check_amui05_acceptance.py --check
           python3 scripts/devtool/check_amt05d_contract.py --check
           python3 scripts/devtool/check_amt06a_contract.py --check
           python3 scripts/devtool/check_amt06b_contract.py --check
@@ -431,3 +432,64 @@ jobs:
             ${{ runner.temp }}/amui01-*.log
           if-no-files-found: error
           retention-days: 7
+
+  amui05-acceptance:
+    name: AMUI05 Android API ${{ matrix.api }} acceptance
+    needs: [source-contract]
+    if: github.event_name == 'workflow_dispatch' && inputs.mode == 'instrumentation'
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    strategy:
+      fail-fast: false
+      matrix:
+        api: [30, 35, 36]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+      - name: Install pinned Devtool (hosted only)
+        shell: bash
+        run: |
+          set -euo pipefail
+          git clone --no-checkout https://github.com/Mikeyphw/devtool.git "$RUNNER_TEMP/devtool-source"
+          git -C "$RUNNER_TEMP/devtool-source" checkout --detach bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c
+          test "$(git -C "$RUNNER_TEMP/devtool-source" rev-parse HEAD)" = bee6e0b7e49aaaa0c56f755fd5be434a27c52b6c
+          python3 -m pip install "$RUNNER_TEMP/devtool-source"
+      - name: Verify KVM hardware acceleration
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -c /dev/kvm || { echo 'AMUI05_KVM_REQUIRED' >&2; exit 1; }
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-amui05-kvm.rules > /dev/null
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match="kvm"
+          sudo chmod 0666 -- /dev/kvm
+          [[ -r /dev/kvm && -w /dev/kvm ]]
+      - name: Hosted exact-API Android instrumentation
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          disable-linux-hw-accel: "false"
+          emulator-boot-timeout: 900
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim
+          script: AMUI05_EXPECT_API=${{ matrix.api }} bash scripts/devtool/amui05_hosted_acceptance.sh
+      - name: Upload exact-commit acceptance evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: amui05-api${{ matrix.api }}-${{ github.run_id }}-${{ github.run_attempt }}
+          path: |
+            ${{ runner.temp }}/amui05-*.json
+            ${{ runner.temp }}/amui05-*.log
+          if-no-files-found: error
+          retention-days: 14

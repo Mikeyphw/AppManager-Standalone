@@ -65,6 +65,7 @@ jobs:
           python3 -B scripts/devtool/check_amui04b_viewport_stress.py --check
           python3 -B scripts/devtool/check_amui04c_refresh_races.py --check
           python3 -B scripts/devtool/check_amui04d_final_gate.py --check
+          python3 -B scripts/devtool/check_amui05_acceptance.py --check
           python3 -B scripts/devtool/test_amui02_theme.py
           python3 -B scripts/devtool/check_amt06c_contract.py --check
           python3 -B scripts/devtool/check_amui01_contract.py --check
