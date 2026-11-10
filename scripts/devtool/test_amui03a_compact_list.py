@@ -9,7 +9,9 @@ class CompactListContracts(unittest.TestCase):
     @classmethod
     def setUpClass(cls):cls.src={p:(ROOT/p).read_text(encoding='utf-8') for p in FILES}
     def reject(self,path,old,new):
-        self.assertIn(old,self.src[path]);s=dict(self.src);s[path]=s[path].replace(old,new,1)
+        self.assertIn(old, self.src[path], 'stale mutation anchor: '+path)
+        s=dict(self.src);s[path]=s[path].replace(old,new,1)
+        self.assertNotEqual(s[path],self.src[path], 'mutation was a no-op: '+path)
         with self.assertRaises(AssertionError):validate(s)
     def test_positive(self):self.assertTrue(validate(self.src))
     def test_no_dynamic_surface(self):self.reject(ROW,'?attr/colorSurfaceContainerLow','@android:color/black')
@@ -29,6 +31,18 @@ class CompactListContracts(unittest.TestCase):
     def test_no_primary_label(self):self.reject(ROW,'?attr/textAppearanceTitleMedium','?attr/textAppearanceBodySmall')
     def test_no_optional_view_height(self):self.reject(ROW,'android:id="@+id/issuer"\n','android:id="@+id/issuer"\n') if False else self.reject(ROW,'android:visibility="gone"','android:visibility="invisible"')
     def test_no_truncation(self):self.reject(ROW,'android:ellipsize="middle"','android:ellipsize="none"')
+    def test_middle_ellipsize_old_maxlines_is_rejected(self):
+        self.reject(ROW, 'android:ellipsize="middle"\n                android:singleLine="true"',
+                    'android:ellipsize="middle"\n                android:maxLines="1"')
+    def test_middle_ellipsize_false_singleline_is_rejected(self):
+        self.reject(ROW, 'android:ellipsize="middle"\n                android:singleLine="true"',
+                    'android:ellipsize="middle"\n                android:singleLine="false"')
+    def test_middle_ellipsize_duplicate_maxlines_is_rejected(self):
+        self.reject(ROW, 'android:ellipsize="middle"\n                android:singleLine="true"',
+                    'android:ellipsize="middle"\n                android:maxLines="1"\n                android:singleLine="true"')
+    def test_stale_mutation_anchor_fails_closed(self):
+        with self.assertRaisesRegex(AssertionError, 'stale mutation anchor'):
+            self.reject(ROW, 'android:deprecatedMaxLines="1"', '')
     def test_no_large_icon(self):self.reject(ROW,'android:layout_width="40dp"','android:layout_width="64dp"')
     def test_no_small_touch_target(self):self.reject(ROW,'android:minHeight="64dp"','android:minHeight="40dp"')
     def test_no_compile_gate(self):self.reject(WF,'Scoped Android resource and Java compile (no emulator)','compile skipped')
