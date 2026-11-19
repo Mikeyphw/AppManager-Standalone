@@ -1,10 +1,11 @@
 name: "CodeQL"
 
 on:
+  workflow_dispatch: {}
   push:
-    branches: [ "master", "AppManager-*" ]
+    branches: [ "master", "AppManager-*", "feature/amui-installer-original-apk-port-20261118" ]
   pull_request:
-    branches: [ "master" ]
+    branches: [ "master", "feature/tasker-automation" ]
   schedule:
     - cron: '43 14 * * 4'
 
@@ -27,7 +28,11 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           submodules: 'recursive'
+      - name: Verify checked-out commit
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:
@@ -38,8 +43,9 @@ jobs:
         uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
-      - name: Autobuild
-        uses: github/codeql-action/autobuild@v3
+      # Compile for CodeQL without requesting an unsigned release APK.
+      - name: Compile Android debug Java sources for CodeQL
+        run: ./gradlew --no-daemon :app:compileDebugJavaWithJavac
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v3
         with:

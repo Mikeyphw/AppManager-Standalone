@@ -28,6 +28,22 @@ class CompactListContracts(unittest.TestCase):
     def test_no_signature(self):self.reject(ROW,'android:id="@+id/sha"','android:id="@+id/lost_sha"')
     def test_no_primary_label(self):self.reject(ROW,'?attr/textAppearanceTitleMedium','?attr/textAppearanceBodySmall')
     def test_no_optional_view_height(self):self.reject(ROW,'android:id="@+id/issuer"\n','android:id="@+id/issuer"\n') if False else self.reject(ROW,'android:visibility="gone"','android:visibility="invisible"')
+    def test_middle_package_rejects_unsafe_max_lines(self):
+        self.reject(ROW,
+                    'android:ellipsize="middle"\n                android:singleLine="true"',
+                    'android:ellipsize="middle"\n                android:maxLines="1"')
+
+    def test_middle_package_rejects_mixed_single_line_and_max_lines(self):
+        self.reject(ROW,'android:singleLine="true"',
+                    'android:singleLine="true"\n                android:maxLines="1"')
+
+    def test_middle_package_refuses_false_single_line(self):
+        self.reject(ROW,'android:singleLine="true"','android:singleLine="false"')
+
+    def test_other_row_fields_do_not_gain_unsafe_middle_ellipsis(self):
+        self.reject(ROW,'android:ellipsize="end"\n                android:maxLines="1"',
+                    'android:ellipsize="middle"\n                android:maxLines="1"')
+
     def test_no_truncation(self):self.reject(ROW,'android:ellipsize="middle"','android:ellipsize="none"')
     def test_no_large_icon(self):self.reject(ROW,'android:layout_width="40dp"','android:layout_width="64dp"')
     def test_no_small_touch_target(self):self.reject(ROW,'android:minHeight="64dp"','android:minHeight="40dp"')

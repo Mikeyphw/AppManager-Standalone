@@ -34,6 +34,12 @@ def validate(data:dict[str,str])->bool:
                 f'targeted source validation missing: {name}')
     require('  android-compile:' in targeted and ':app:compileDebugAndroidTestJavaWithJavac' in targeted,
             'hosted AndroidTest compilation gate missing')
+    require("python3 -B -m unittest discover -s scripts/devtool -p 'test_*.py' -v" in targeted,
+            'complete source-only regression discovery missing from required CI')
+    require('if [[ "$EVENT" == pull_request ]]; then\n            from="$BASE_PR"\n            to="$HEAD_PR"' in targeted,
+            'PR compile eligibility must cover cumulative base-to-head changes')
+    require('app/src/test/' in targeted and 'app/build.gradle' in targeted,
+            'app test and signing/build changes must trigger compile qualification')
     require('app/src/(main|androidTest)/' in targeted,
             'AndroidTest change must trigger scoped compilation')
     require('amui-targeted-ci.yml' in data['amt00'] and

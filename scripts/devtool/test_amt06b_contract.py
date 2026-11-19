@@ -32,5 +32,9 @@ class Contract(unittest.TestCase):
  def test_no_false_verification(self):self.mutate('journal','"%am_restore_request_verified", "false"','"%am_restore_request_verified", "true"')
  def test_user_consent_required(self):self.mutate('editor','restoreConsent.isChecked()','true')
  def test_device_coverage_required(self):self.mutate('runner',"assert int(r.get('passed', 0)) >= 26, ('AMT06B_RESTORE_NEGATIVE_DEVICE_COVERAGE_INCOMPLETE', r)",'assert True')
+ def test_real_instrumentation_execution_gate(self):self.mutate('workflow',
+   'script: bash scripts/devtool/amt03_hosted_instrumentation.sh', 'script: echo bypassed')
+ def test_native_backup_callback_remains_required(self):self.mutate('service',
+   'TaskerApkBackupJournal.serviceFinished(this, queueItem,', '// removed')
  def test_hosted_source_gate(self):self.mutate('workflow','check_amt06b_contract.py --check','echo bypass')
 if __name__=='__main__':unittest.main()

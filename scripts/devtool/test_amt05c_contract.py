@@ -41,6 +41,13 @@ class AMT05CContracts(unittest.TestCase):
         self.replace('journal','serviceStarted(', 'registerReceiver(serviceStarted(')
     def test_hosted_source_contract_mandatory(self):
         self.replace('workflow','check_amt05c_contract.py --check','echo bypass')
+    def test_workflow_requires_real_android_instrumentation_entrypoint(self):
+        # Source workflow listing a Java filename is not execution evidence.
+        self.replace('workflow', 'script: bash scripts/devtool/amt03_hosted_instrumentation.sh',
+                     'script: echo instrumentation bypassed')
+    def test_native_service_start_callback_remains_required(self):
+        self.replace('service', 'TaskerApkBackupJournal.serviceStarted(this, queueItem);',
+                     '// native start callback removed')
     def test_17_device_tests_required(self):
         self.replace('runner',"assert int(r.get('passed', 0)) >= 17, ('AMT05C_RECEIPT_DEVICE_COVERAGE_INCOMPLETE', r)",
                      'assert True')

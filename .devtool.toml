@@ -149,7 +149,7 @@ description = "Explicitly approve GitHub workflow dispatch"
 command_argv = ["--yes"]
 
 [wrapper.commands.ci-full]
-description = "Dispatch source/Gradle build, test and lint on GitHub Actions"
+description = "Dispatch full CI on feature/tasker-automation base (NOT PR-head qualification)"
 devtool = "actions"
 [wrapper.commands.ci-full.actions]
 operation = "dispatch"

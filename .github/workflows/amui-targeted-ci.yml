@@ -24,17 +24,19 @@ concurrency:
 jobs:
   source-contract:
     name: Targeted source and regression contracts
-    # Same-repo PRs already have an exact-commit push run: skip duplicate jobs.
-    # Fork PRs have no origin branch push, so still get checks here.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    # Required CI: execute actual source/compile checks on every PR, including same-repository PRs.
     runs-on: ubuntu-latest
     outputs:
       compile: ${{ steps.scope.outputs.compile }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           submodules: recursive
+      - name: Verify required-CI exact source HEAD
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -62,6 +64,7 @@ jobs:
           python3 -B scripts/devtool/check_amt06c_contract.py --check
           python3 -B scripts/devtool/check_amui01_contract.py --check
           python3 -B scripts/devtool/check_amui01_hf09_kvm.py --check
+          python3 -B -m unittest discover -s scripts/devtool -p 'test_*.py' -v
           sh -n devtoolw
       - name: Detect compile-relevant changes
         id: scope
@@ -73,9 +76,6 @@ jobs:
           HEAD_PR: ${{ github.event.pull_request.head.sha }}
           BEFORE: ${{ github.event.before }}
           CURRENT: ${{ github.sha }}
-          PR_ACTION: ${{ github.event.action }}
-          PR_PREVIOUS: ${{ github.event.before }}
-          PR_CURRENT: ${{ github.event.after }}
         run: |
           set -euo pipefail
           if [[ "$FOCUS" == source ]]; then
@@ -87,13 +87,8 @@ jobs:
             exit 0
           fi
           if [[ "$EVENT" == pull_request ]]; then
-            if [[ "$PR_ACTION" == synchronize && "$PR_PREVIOUS" =~ ^[0-9a-f]{40}$ && "$PR_CURRENT" =~ ^[0-9a-f]{40}$ ]]; then
-              from="$PR_PREVIOUS"
-              to="$PR_CURRENT"
-            else
-              from="$BASE_PR"
-              to="$HEAD_PR"
-            fi
+            from="$BASE_PR"
+            to="$HEAD_PR"
           elif [[ "$EVENT" == push ]]; then
             from="$BEFORE"
             to="$CURRENT"
@@ -107,7 +102,7 @@ jobs:
             exit 0
           fi
           git diff --name-only "$from" "$to" > "$RUNNER_TEMP/amui-changed-files.txt"
-          if grep -Eq '^(app/src/(main|androidTest)/|libcore/ui/src/main/|libcore/[^/]+/src/main/|build.gradle|settings.gradle|gradle/|gradle.properties)' "$RUNNER_TEMP/amui-changed-files.txt"; then
+          if grep -Eq '^(app/src/(main|androidTest)/|app/src/test/|app/build.gradle|libcore/ui/src/main/|libcore/[^/]+/src/main/|build.gradle|settings.gradle|gradle/|gradle.properties)' "$RUNNER_TEMP/amui-changed-files.txt"; then
             echo 'compile=true' >> "$GITHUB_OUTPUT"
           else
             echo 'compile=false' >> "$GITHUB_OUTPUT"
@@ -130,7 +125,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           submodules: recursive
+      - name: Verify required-CI exact source HEAD
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - uses: actions/setup-java@v4
         with:
           distribution: zulu

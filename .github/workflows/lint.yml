@@ -1,10 +1,12 @@
 name: Lint
 
 on:
+  workflow_dispatch: {}
   push:
     branches:
       - 'master'
       - 'AppManager-*'
+      - 'feature/amui-installer-original-apk-port-20261118'
     paths-ignore:
       - 'fastlane/**'
       - 'scripts/**'
@@ -13,10 +15,7 @@ on:
     branches:
       - 'master'
       - 'AppManager-*'
-    paths-ignore:
-      - 'fastlane/**'
-      - 'scripts/**'
-      - '*.md'
+      - 'feature/tasker-automation'
 
 jobs:
   build:
@@ -25,7 +24,11 @@ jobs:
       - name: Clone the repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           submodules: 'recursive'
+      - name: Verify checked-out commit
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - name: Set up JDK
         uses: actions/setup-java@v4
         with:

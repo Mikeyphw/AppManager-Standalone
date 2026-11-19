@@ -16,6 +16,19 @@ class AMT04B1ContractTests(unittest.TestCase):
             s=p.read_text();self.assertIn(from_text,s);p.write_text(s.replace(from_text,to_text))
             self.assertEqual('FAIL',inspect(root)['status'])
     def test_full_contract(self):self.assertEqual('PASS',inspect(ROOT)['status'])
+    def test_ci_must_invoke_real_instrumentation_entrypoint(self):
+        self.assert_detects(Path('.github/workflows/devtool-tasker-ci.yml'),
+            'bash scripts/devtool/amt03_hosted_instrumentation.sh', 'echo device checks skipped')
+    def test_script_must_select_real_junit_class(self):
+        self.assert_detects(Path('scripts/devtool/amt03_hosted_instrumentation.sh'),
+            '--class io.github.muntashirakon.AppManager.automation.tasker.TaskerJournalInstrumentedTest',
+            '--class nonexistent.MissingTest')
+    def test_script_cannot_drop_receipt_coverage(self):
+        self.assert_detects(Path('scripts/devtool/amt03_hosted_instrumentation.sh'),
+            "int(r.get('passed', 0)) >= 30", 'False')
+    def test_script_cannot_accept_failed_tests(self):
+        self.assert_detects(Path('scripts/devtool/amt03_hosted_instrumentation.sh'),
+            "int(r.get('failed', 0)) == 0", 'True')
     def test_cannot_disable_scoped_hmac(self):self.assert_detects(PKG/'TaskerPackageManageAccess.java','MessageDigest.isEqual','String.equals')
     def test_cannot_remove_permission_check(self):self.assert_detects(PKG/'TaskerPackageManageBackend.java','SelfPermissions.checkSelfOrRemotePermission(', 'true || permissionCheck(')
     def test_cannot_remove_system_guard(self):self.assert_detects(PKG/'TaskerPackageManageBackend.java','system_package_denied','no_guard')

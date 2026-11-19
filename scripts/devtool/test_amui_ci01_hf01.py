@@ -21,6 +21,14 @@ class Ci01Hf01Mutations(unittest.TestCase):
     def test_amt04b2b_guard(self):self.reject('amt04b2b','amui-targeted-ci.yml','missing-targeted.yml')
     def test_javac_nontransitive(self):self.reject('android_test','androidx.appcompat.R.attr.colorPrimary','com.google.android.material.R.attr.colorPrimary')
     def test_scoped_compile_not_removed(self):self.reject('targeted',':app:compileDebugAndroidTestJavaWithJavac',':app:compileDebugJavaWithJavac')
+    def test_full_source_suite_required(self):
+        self.reject('targeted', "python3 -B -m unittest discover -s scripts/devtool -p 'test_*.py' -v", 'echo skipped')
+    def test_incremental_pr_scope_refused(self):
+        self.reject('targeted', 'from="$BASE_PR"', 'from="$PR_PREVIOUS"')
+    def test_unit_test_sources_trigger_compile(self):
+        self.reject('targeted', 'app/src/test/', 'app/src/removed/')
+    def test_build_gradle_triggers_compile(self):
+        self.reject('targeted', 'app/build.gradle', 'app/other.txt')
     def test_gate_hook_cadence(self):self.reject('hook','AMUI_GATE_EVERY:-5','AMUI_GATE_EVERY:-999')
     def test_post_push_records_once(self):self.reject('hook','scripts/devtool/amui_ci_gate.py --record "$sha"','scripts/devtool/amui_ci_gate.py --status')
 if __name__=='__main__':unittest.main()
