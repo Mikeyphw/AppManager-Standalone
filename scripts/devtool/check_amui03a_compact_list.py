@@ -38,8 +38,19 @@ def validate(sources:dict[str,str])->bool:
     for name in TEXTS:
         n=nodes[name]
         must(n.tag.endswith('TextView'),'bound field no longer a TextView: '+name)
-        must(n.get(ANDROID+'maxLines')=='1' and n.get(ANDROID+'ellipsize') in ('end','middle'),
-             'long text cannot truncate safely: '+name)
+        if name == 'packageName':
+            # Middle ellipsizing with maxLines=1 is unsafe on Android; retain a
+            # single line using the framework-supported singleLine attribute.
+            must(n.get(ANDROID+'singleLine') == 'true'
+                 and n.get(ANDROID+'maxLines') is None
+                 and n.get(ANDROID+'ellipsize') == 'middle',
+                 'package ID requires singleLine=true and middle ellipsize without maxLines')
+        else:
+            # All other bound fields still enforce one-line end truncation.
+            must(n.get(ANDROID+'maxLines') == '1'
+                 and n.get(ANDROID+'singleLine') is None
+                 and n.get(ANDROID+'ellipsize') == 'end',
+                 'metadata requires maxLines=1 and end ellipsize: '+name)
         must(n.get(ANDROID+'textAppearance','').startswith('?attr/textAppearance'),
              'text palette role missing: '+name)
     must(nodes['packageName'].get(ANDROID+'ellipsize')=='middle','long package IDs must retain recognizable suffix')

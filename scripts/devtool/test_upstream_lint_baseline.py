@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from pathlib import Path
 import xml.etree.ElementTree as ET
-from check_upstream_lint_baseline import BASELINE_FILE, baseline, check, read_error_fingerprints
+from check_upstream_lint_baseline import BASELINE_FILE, ROOT, baseline, check, read_error_fingerprints
 
 
 def fixture(path, records):
@@ -90,6 +90,29 @@ class XmlBaselineTest(unittest.TestCase):
             with self.assertRaises(ValueError): read_error_fingerprints(report)
             report.write_text('<issues><issue id="NewApi" severity="Error" message="x"><location file="app/src/A.java" line="1" /></issue></issues>')
             with self.assertRaises(ValueError): read_error_fingerprints(report)
+
+    @staticmethod
+    def _safe_package_name_middle_truncation(source):
+        root = ET.fromstring(source)
+        namespace = '{http://schemas.android.com/apk/res/android}'
+        fields = [node for node in root.iter()
+                  if node.get(namespace + 'id') == '@+id/packageName']
+        return (len(fields) == 1
+                and fields[0].get(namespace + 'ellipsize') == 'middle'
+                and fields[0].get(namespace + 'singleLine') == 'true'
+                and fields[0].get(namespace + 'maxLines') is None)
+
+    def test_package_name_middle_ellipsize_uses_single_line(self):
+        source = (ROOT / 'app/src/main/res/layout/item_main.xml').read_text(encoding='utf-8')
+        self.assertTrue(self._safe_package_name_middle_truncation(source))
+
+    def test_package_name_middle_ellipsize_maxlines_is_rejected(self):
+        source = (ROOT / 'app/src/main/res/layout/item_main.xml').read_text(encoding='utf-8')
+        safe = 'android:ellipsize="middle"\n                android:singleLine="true"'
+        unsafe = 'android:ellipsize="middle"\n                android:maxLines="1"'
+        self.assertEqual(1, source.count(safe))
+        corrupted = source.replace(safe, unsafe, 1)
+        self.assertFalse(self._safe_package_name_middle_truncation(corrupted))
 
     def test_source_scope_and_pinning(self):
         data=json.loads(BASELINE_FILE.read_text())
