@@ -71,7 +71,7 @@ GUARDS = {
                'testApkBackupHostTargetNeverStartsBatchService'],
     'workflow': ['check_amt05c_contract.py --check',
                  'check_amt05b_contract.py --check',
-                 "app/src/main/java/io/github/muntashirakon/AppManager/batchops/BatchOpsService.java'",
+                 'script: bash scripts/devtool/amt03_hosted_instrumentation.sh',
                  'default: source',
                  "inputs.mode == 'full' || inputs.mode == 'instrumentation'"],
     'runner': ["assert int(r.get('passed', 0)) >= 14, ('AMT05B_NEGATIVE_DEVICE_COVERAGE_INCOMPLETE', r)",
