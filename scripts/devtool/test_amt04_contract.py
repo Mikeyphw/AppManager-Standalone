@@ -48,12 +48,24 @@ class AMT04AContractTests(unittest.TestCase):
                                                 'android:name=".automation.tasker.NotQueryEditor"'))
             self.assertEqual('FAIL', inspect(root)['status'])
 
-    def test_hosted_instrumentation_push_scope(self):
+    def test_targeted_push_scope_cannot_be_removed(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp); self.fixture(root)
-            p = root / '.github/workflows/devtool-tasker-ci.yml'
-            p.write_text(p.read_text().replace(
-                "      - 'app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/**'", ''))
+            p = root / '.github/workflows/amui-targeted-ci.yml'
+            source = p.read_text()
+            anchor = "branches: ['feature/amui*', feature/tasker-automation]"
+            self.assertEqual(1, source.count(anchor))
+            p.write_text(source.replace(anchor, 'branches: [feature/tasker-automation]', 1))
+            self.assertEqual('FAIL', inspect(root)['status'])
+
+    def test_androidtest_source_scope_cannot_be_removed(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp); self.fixture(root)
+            p = root / '.github/workflows/amui-targeted-ci.yml'
+            source = p.read_text()
+            anchor = 'app/src/(main|androidTest)/'
+            self.assertEqual(1, source.count(anchor))
+            p.write_text(source.replace(anchor, 'app/src/main/', 1))
             self.assertEqual('FAIL', inspect(root)['status'])
 
 

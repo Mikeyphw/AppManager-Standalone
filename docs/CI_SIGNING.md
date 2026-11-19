@@ -29,6 +29,18 @@ upload it. Failed/missing secrets or wrong certificate identities fail closed.
   explicit `workflow_dispatch` (`mode=full`) at the exact PR commit; the hosted build signs app
   debug APKs with `debug-signing` and verifies every APK before artifact upload.
   Android 15/16 instrumentation remains separate device evidence.
+- `.github/workflows/amui-targeted-ci.yml`: required CI runs the entire
+  `scripts/devtool/test_*.py` regression suite, not just selected source checks.
+  PR compilation eligibility compares the PR base to its actual head so a
+  source-only follow-up does not conceal prior Java/resource/test changes.
+  Push-only checks may remain incremental for efficiency.
+- `.devtool.toml` `ci-full` dispatches the `feature/tasker-automation` **base**.
+  It is not a PR-head acceptance shortcut. Qualify the current PR with explicit
+  `gh workflow run devtool-tasker-ci.yml -R Mikeyphw/AppManager-Standalone
+  --ref feature/amui-installer-original-apk-port-20261118 -f mode=full`, after
+  checking that GitHub reports the expected exact head SHA. The runtime's
+  source-bound Devtool session is the authority for required-CI qualification.
+
 - `config/delivery-required-ci.json`: native Devtool required PR checks on
   `feature/tasker-automation`, with exact verified GitHub IDs for Targeted CI,
   Tests, Lint, and CodeQL. The targeted source gate is now executed for
