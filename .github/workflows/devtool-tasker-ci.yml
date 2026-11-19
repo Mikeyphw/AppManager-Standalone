@@ -80,6 +80,13 @@ jobs:
   hosted-android:
     name: Android Gradle through Devtool (GitHub-hosted only)
     needs: [source-contract]
+    environment: debug-signing
+    env:
+      AM_SIGNING_VARIANT: debug
+      AM_DEBUG_KEYSTORE_B64: ${{ secrets.AM_DEBUG_KEYSTORE_B64 }}
+      AM_DEBUG_KEY_ALIAS: ${{ secrets.AM_DEBUG_KEY_ALIAS }}
+      AM_DEBUG_KEY_PASSWORD: ${{ secrets.AM_DEBUG_KEY_PASSWORD }}
+      AM_DEBUG_STORE_PASSWORD: ${{ secrets.AM_DEBUG_STORE_PASSWORD }}
     if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && inputs.mode != 'source' && inputs.mode != 'instrumentation') || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01'))
     runs-on: ubuntu-latest
     timeout-minutes: 90
@@ -99,6 +106,9 @@ jobs:
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
+      - name: Load protected debug signing identity
+        shell: bash
+        run: bash scripts/devtool/ci_signing.sh prepare
       - name: Install Android SDK packages
         shell: bash
         run: |
@@ -166,16 +176,19 @@ jobs:
             full)  run_guarded_devtool full devtool --repo "$PWD" --java-home "$JAVA_HOME" invoke --target app ci ;;
             *)     echo "Unsupported mode: $MODE" >&2; exit 2 ;;
           esac
+      - name: Verify every debug APK against the protected certificate
+        shell: bash
+        run: bash scripts/devtool/ci_signing.sh verify app/build/outputs/apk/debug
       - name: Produce checksum manifest of debug APKs
-        if: always()
+        if: success()
         shell: bash
         run: |
           set -euo pipefail
           if find app/build/outputs/apk/debug -type f -name '*.apk' -print -quit 2>/dev/null | grep -q .; then
             find app/build/outputs/apk/debug -type f -name '*.apk' -print0 | sort -z | xargs -0 sha256sum > devtool-apk-sha256.txt
           fi
-      - name: Upload debug APKs and integrity manifest (not release-signed)
-        if: always() && (inputs.mode == 'build' || inputs.mode == 'full' || github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01')))
+      - name: Upload verified signed debug APKs and integrity manifest
+        if: success() && (inputs.mode == 'build' || inputs.mode == 'full' || github.event_name == 'pull_request' || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01')))
         uses: actions/upload-artifact@v4
         with:
           name: appmanager-devtool-debug-${{ github.run_id }}-${{ github.run_attempt }}
@@ -211,6 +224,13 @@ jobs:
   device-instrumentation:
     name: AMT-03 Android instrumentation via Devtool emulator
     needs: [source-contract]
+    environment: debug-signing
+    env:
+      AM_SIGNING_VARIANT: debug
+      AM_DEBUG_KEYSTORE_B64: ${{ secrets.AM_DEBUG_KEYSTORE_B64 }}
+      AM_DEBUG_KEY_ALIAS: ${{ secrets.AM_DEBUG_KEY_ALIAS }}
+      AM_DEBUG_KEY_PASSWORD: ${{ secrets.AM_DEBUG_KEY_PASSWORD }}
+      AM_DEBUG_STORE_PASSWORD: ${{ secrets.AM_DEBUG_STORE_PASSWORD }}
     if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'full' || inputs.mode == 'instrumentation') || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01'))
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -230,6 +250,9 @@ jobs:
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
+      - name: Load protected debug signing identity
+        shell: bash
+        run: bash scripts/devtool/ci_signing.sh prepare
       - name: Install hosted Android SDK and pinned Devtool
         shell: bash
         run: |
@@ -314,6 +337,7 @@ jobs:
           test "${#apks[@]}" -eq 1
           apk="${apks[0]}"
           "$ANDROID_HOME/build-tools/36.1.0/aapt" dump badging "$apk" | grep -F "package: name='dev.mikeyphw.amt06c.fixture'"
+          "$ANDROID_HOME/build-tools/36.1.0/apksigner" verify --verbose "$apk"
           sha256sum "$apk" > scripts/devtool/amt06c_fixture/SHA256SUMS.txt
       - name: Publish disposable fixture APK and digest (not release signed)
         if: success()
@@ -329,6 +353,13 @@ jobs:
   amui01-android16:
     name: AMUI-01 real package lifecycle on Android 16
     needs: [source-contract]
+    environment: debug-signing
+    env:
+      AM_SIGNING_VARIANT: debug
+      AM_DEBUG_KEYSTORE_B64: ${{ secrets.AM_DEBUG_KEYSTORE_B64 }}
+      AM_DEBUG_KEY_ALIAS: ${{ secrets.AM_DEBUG_KEY_ALIAS }}
+      AM_DEBUG_KEY_PASSWORD: ${{ secrets.AM_DEBUG_KEY_PASSWORD }}
+      AM_DEBUG_STORE_PASSWORD: ${{ secrets.AM_DEBUG_STORE_PASSWORD }}
     if: github.event_name == 'workflow_dispatch' && (inputs.mode == 'instrumentation' || inputs.mode == 'full') || (github.event_name == 'push' && startsWith(github.ref, 'refs/heads/feature/amui01'))
     runs-on: ubuntu-latest
     timeout-minutes: 75
@@ -348,6 +379,9 @@ jobs:
       - uses: android-actions/setup-android@v4
         with:
           packages: 'platform-tools'
+      - name: Load protected debug signing identity
+        shell: bash
+        run: bash scripts/devtool/ci_signing.sh prepare
       - name: Provision exact Android/Devtool SDK
         shell: bash
         run: |

@@ -1,0 +1,25 @@
+{
+  "base_branch": "feature/tasker-automation",
+  "event": "pull_request",
+  "release_qualification": "separate",
+  "repository": "Mikeyphw/AppManager-Standalone",
+  "required_workflows": [
+    {
+      "name": "AppManager Targeted CI (development)",
+      "workflow_id": 412582857
+    },
+    {
+      "name": "Tests",
+      "workflow_id": 412143726
+    },
+    {
+      "name": "Lint",
+      "workflow_id": 412143719
+    },
+    {
+      "name": "CodeQL",
+      "workflow_id": 412143715
+    }
+  ],
+  "schema_version": 1
+}

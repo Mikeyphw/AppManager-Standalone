@@ -24,17 +24,19 @@ concurrency:
 jobs:
   source-contract:
     name: Targeted source and regression contracts
-    # Same-repo PRs already have an exact-commit push run: skip duplicate jobs.
-    # Fork PRs have no origin branch push, so still get checks here.
-    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository
+    # Required CI: execute actual source/compile checks on every PR, including same-repository PRs.
     runs-on: ubuntu-latest
     outputs:
       compile: ${{ steps.scope.outputs.compile }}
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           submodules: recursive
+      - name: Verify required-CI exact source HEAD
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -130,7 +132,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           submodules: recursive
+      - name: Verify required-CI exact source HEAD
+        shell: bash
+        run: test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha || github.sha }}"
       - uses: actions/setup-java@v4
         with:
           distribution: zulu

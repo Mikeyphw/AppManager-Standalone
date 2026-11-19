@@ -34,17 +34,43 @@ android {
         buildConfigField "long", "BUILD_TIME_MILLIS", "${buildTime()}"
     }
 
+    // Only signed APKs may be produced. CI-backed identities are injected at runtime;
+    // normal local debug builds retain Android's automatically signed debug identity.
+    def ciSigningVariant = (System.getenv('AM_SIGNING_VARIANT') ?: '').trim()
+    if (ciSigningVariant && !(ciSigningVariant in ['debug', 'release'])) {
+        throw new GradleException('Unknown AM_SIGNING_VARIANT; expected debug or release')
+    }
+    def ciKeyPath = (System.getenv('AM_SIGNING_KEYSTORE') ?: '').trim()
+    def ciPrefix = ciSigningVariant == 'release' ? 'AM_RELEASE_' : 'AM_DEBUG_'
+    def ciAlias = System.getenv(ciPrefix + 'KEY_ALIAS')
+    def ciStorePassword = System.getenv(ciPrefix + 'STORE_PASSWORD')
+    def ciKeyPassword = System.getenv(ciPrefix + 'KEY_PASSWORD')
+    if (ciSigningVariant && (!ciKeyPath || !file(ciKeyPath).isFile() ||
+            !ciAlias || !ciStorePassword || !ciKeyPassword)) {
+        throw new GradleException('Required CI signing identity incomplete: ' + ciSigningVariant)
+    }
     signingConfigs {
-        debug {
-            storeFile file('dev_keystore.jks')
-            storePassword 'kJCp!Bda#PBdN2RLK%yMK@hatq&69E'
-            keyPassword 'kJCp!Bda#PBdN2RLK%yMK@hatq&69E'
-            keyAlias 'key0'
+        if (ciSigningVariant == 'debug') {
+            ciDebug {
+                storeFile file(ciKeyPath)
+                storePassword ciStorePassword
+                keyPassword ciKeyPassword
+                keyAlias ciAlias
+            }
+        }
+        if (ciSigningVariant == 'release') {
+            ciRelease {
+                storeFile file(ciKeyPath)
+                storePassword ciStorePassword
+                keyPassword ciKeyPassword
+                keyAlias ciAlias
+            }
         }
     }
 
     buildTypes {
         release {
+            if (ciSigningVariant == 'release') signingConfig signingConfigs.ciRelease
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
             resValue "string", "app_name", "App Manager"
@@ -52,7 +78,7 @@ android {
         debug {
             applicationIdSuffix '.debug'
             versionNameSuffix '-DEBUG'
-            signingConfig signingConfigs.debug
+            signingConfig ciSigningVariant == 'debug' ? signingConfigs.ciDebug : signingConfigs.debug
             resValue "string", "app_name", "AM Debug"
         }
     }
@@ -107,6 +133,17 @@ android {
     buildFeatures {
         aidl true
         buildConfig true
+    }
+}
+
+// No release package task may produce an unsigned APK/AAB. This gate does
+// not require production secrets for source checks, lint or debug-only tests.
+gradle.taskGraph.whenReady { graph ->
+    boolean releasePackage = graph.allTasks.any { task ->
+        task.project == project && task.name ==~ /(?i)(assemble|package|bundle).*release.*/
+    }
+    if (releasePackage && System.getenv('AM_SIGNING_VARIANT') != 'release') {
+        throw new GradleException('Unsigned release packaging refused: use protected release-signing workflow')
     }
 }
 

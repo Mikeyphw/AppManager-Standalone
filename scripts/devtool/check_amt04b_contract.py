@@ -11,6 +11,7 @@ FILES=tuple(PKG/p for p in ('TaskerPackageManageWire.java','TaskerPackageManageA
             'TaskerPackageManageReceiver.java','TaskerActionReceiver.java'))+(
             Path('app/src/main/AndroidManifest.xml'),
             Path('.github/workflows/devtool-tasker-ci.yml'),
+            Path('scripts/devtool/amt03_hosted_instrumentation.sh'),
             Path('app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerJournalInstrumentedTest.java'),
             Path('app/src/test/java/io/github/muntashirakon/AppManager/automation/tasker/TaskerPackageManageTest.java'),
             Path('docs/AMT04B1_PACKAGE_MANAGE.md'))
@@ -50,7 +51,12 @@ def inspect(root=ROOT):
         'TaskerJournalInstrumentedTest.java':['testManageOwnPackageAlwaysDenied',
             'testManageUnknownOperationAlwaysDenied'],
         'devtool-tasker-ci.yml':['check_amt04b_contract.py --check',
-            'app/src/androidTest/java/io/github/muntashirakon/AppManager/automation/**'],
+            'bash scripts/devtool/amt03_hosted_instrumentation.sh',
+            'api-level: 35', 'api-level: 36'],
+        'amt03_hosted_instrumentation.sh':[
+            '--class io.github.muntashirakon.AppManager.automation.tasker.TaskerJournalInstrumentedTest',
+            "int(r.get('passed', 0)) >= 30", 'AMT03_DEVICE_INSTRUMENTATION_PASS',
+            "int(r.get('failed', 0)) == 0", "r.get('status') in ('passed', 'success')"],
     }
     for file, markers in guards.items():
         for marker in markers:

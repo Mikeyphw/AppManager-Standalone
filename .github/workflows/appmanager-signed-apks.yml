@@ -1,0 +1,93 @@
+name: AppManager Verified Signed APKs
+
+"on":
+  workflow_dispatch:
+    inputs:
+      variant:
+        type: choice
+        description: 'Select protected signing identity'
+        required: true
+        default: debug
+        options: [debug, release]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: appmanager-signed-${{ github.ref }}-${{ inputs.variant }}
+  cancel-in-progress: false
+
+jobs:
+  signed-apks:
+    name: Verified signed ${{ inputs.variant }} APKs
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'Mikeyphw/AppManager-Standalone'
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    environment: ${{ inputs.variant == 'release' && 'release-signing' || 'debug-signing' }}
+    env:
+      AM_SIGNING_VARIANT: ${{ inputs.variant }}
+      AM_DEBUG_KEYSTORE_B64: ${{ secrets.AM_DEBUG_KEYSTORE_B64 }}
+      AM_DEBUG_KEY_ALIAS: ${{ secrets.AM_DEBUG_KEY_ALIAS }}
+      AM_DEBUG_STORE_PASSWORD: ${{ secrets.AM_DEBUG_STORE_PASSWORD }}
+      AM_DEBUG_KEY_PASSWORD: ${{ secrets.AM_DEBUG_KEY_PASSWORD }}
+      AM_RELEASE_KEYSTORE_B64: ${{ secrets.AM_RELEASE_KEYSTORE_B64 }}
+      AM_RELEASE_KEY_ALIAS: ${{ secrets.AM_RELEASE_KEY_ALIAS }}
+      AM_RELEASE_STORE_PASSWORD: ${{ secrets.AM_RELEASE_STORE_PASSWORD }}
+      AM_RELEASE_KEY_PASSWORD: ${{ secrets.AM_RELEASE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+          persist-credentials: false
+      - name: Verify exact trusted checkout
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "$GITHUB_SHA"
+          test "$GITHUB_REPOSITORY" = 'Mikeyphw/AppManager-Standalone'
+          test "$GITHUB_REF_TYPE" = branch
+      - uses: actions/setup-java@v4
+        with:
+          distribution: zulu
+          java-version: '21'
+          cache: gradle
+      - uses: android-actions/setup-android@v4
+        with:
+          packages: platform-tools
+      - name: Install pinned Android SDK packages
+        shell: bash
+        run: |
+          set -euo pipefail
+          sdkmanager --install 'platforms;android-36' 'build-tools;36.1.0' 'platform-tools' 'cmake;3.22.1' 'ndk;27.0.12077973'
+      - name: Prepare protected signing identity
+        run: bash scripts/devtool/ci_signing.sh prepare
+      - name: Build selected Android variant
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [[ "$AM_SIGNING_VARIANT" == debug ]]; then
+            ./gradlew --no-daemon :app:assembleDebug
+          elif [[ "$AM_SIGNING_VARIANT" == release ]]; then
+            ./gradlew --no-daemon :app:assembleRelease
+          else
+            echo 'Unknown signing variant' >&2; exit 2
+          fi
+      - name: Verify signatures and certificate identity before publication
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash scripts/devtool/ci_signing.sh verify "app/build/outputs/apk/$AM_SIGNING_VARIANT"
+          find "app/build/outputs/apk/$AM_SIGNING_VARIANT" -type f -name '*.apk' -print0 | sort -z | xargs -0 sha256sum > signed-apk-sha256.txt
+          git rev-parse HEAD > signed-apk-commit.txt
+      - name: Upload only verified signed APKs
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: appmanager-${{ inputs.variant }}-signed-${{ github.sha }}-${{ github.run_id }}
+          path: |
+            app/build/outputs/apk/${{ inputs.variant }}/**/*.apk
+            signed-apk-sha256.txt
+            signed-apk-commit.txt
+          if-no-files-found: error
+          retention-days: 14
