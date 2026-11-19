@@ -2,6 +2,7 @@
 """Current signing and hosted source-contract regression, no Gradle or credentials."""
 from pathlib import Path
 import json
+import re
 import subprocess
 import tempfile
 import unittest
@@ -80,6 +81,18 @@ def inspect(root=ROOT):
             if needle not in body: errors.append(name+': missing '+needle)
     for forbidden in ['dev_keystore.jks','kJCp!Bda']:
         if forbidden in gradle: errors.append('deprecated public signing credential still referenced')
+    # Validate the *actual* Gradle task name patterns, rather than an
+    # unrelated test-side approximation. Release tests cannot be mistaken for
+    # distributable APKs, and release output tasks must remain fail-closed.
+    release_patterns = re.findall(r'task\.name\s*==~\s*/([^/\n]+)/', gradle)
+    expected_patterns = [
+        '(?i)(assemble|package|bundle).*release.*',
+        '(?i).*(unittest|androidtest).*',
+    ]
+    if release_patterns != expected_patterns:
+        errors.append('release task graph must distinguish signed artifacts from unit-test packaging')
+    if "if (releasePackage && System.getenv('AM_SIGNING_VARIANT') != 'release')" not in gradle:
+        errors.append('release output gate no longer rejects missing protected signing identity')
     if 'uses: github/codeql-action/autobuild@v3' in codeql:
         errors.append('CodeQL must not request an unsigned release build')
     return errors
@@ -128,6 +141,42 @@ class SigningSourceContract(unittest.TestCase):
         self.fixture('.github/workflows/codeql.yml',
                      'ref: ${{ github.event.pull_request.head.sha || github.sha }}',
                      'ref: main')
+    def test_release_guard_task_classification(self):
+        gradle = (ROOT/'app/build.gradle').read_text()
+        patterns = re.findall(r'task\.name\s*==~\s*/([^/\n]+)/', gradle)
+        self.assertEqual(['(?i)(assemble|package|bundle).*release.*',
+                          '(?i).*(unittest|androidtest).*'], patterns)
+        for task, should_gate in (
+            ('assembleRelease', True),
+            ('packageRelease', True),
+            ('packageReleaseUniversalApk', True),
+            ('bundleRelease', True),
+            ('packageReleaseBundle', True),
+            ('assembleDebug', False),
+            ('packageDebug', False),
+            ('testDebugUnitTest', False),
+            ('testReleaseUnitTest', False),
+            ('packageReleaseUnitTestForUnitTest', False),
+            ('packageReleaseAndroidTest', False),
+        ):
+            actual = bool(re.fullmatch(patterns[0], task)) and not bool(re.fullmatch(patterns[1], task))
+            self.assertEqual(should_gate, actual, task)
+
+    def test_cannot_block_release_unit_test_packaging(self):
+        self.fixture('app/build.gradle',
+                     '!(task.name ==~ /(?i).*(unittest|androidtest).*/)',
+                     'true')
+
+    def test_cannot_allow_unsigned_release_assemble(self):
+        self.fixture('app/build.gradle',
+                     '(task.name ==~ /(?i)(assemble|package|bundle).*release.*/)',
+                     '(task.name ==~ /(?i)(assemble|package|bundle).*debug.*/)')
+
+    def test_cannot_remove_required_release_identity_check(self):
+        self.fixture('app/build.gradle',
+                     "if (releasePackage && System.getenv('AM_SIGNING_VARIANT') != 'release')",
+                     'if (false)')
+
     def test_shell_syntax(self):
         proc=subprocess.run(['bash','-n',str(ROOT/'scripts/devtool/ci_signing.sh')],check=False)
         self.assertEqual(0,proc.returncode)

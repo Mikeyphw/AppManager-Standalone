@@ -51,7 +51,12 @@ upload it. Failed/missing secrets or wrong certificate identities fail closed.
 password are no longer used. That old tracked file should be retired through a
 separate authorized native deletion once deletion support is reviewed. Never
 rely on it as a private identity. **Local release packaging without the
-protected release identity is rejected** by Gradle.
+protected release identity is rejected** by Gradle. The release artifact
+signature gate is intentionally scoped to actual `assemble/package/bundle`
+release output tasks; `packageReleaseUnitTestForUnitTest` and other
+`*UnitTest`/`*AndroidTest` fixture tasks remain runnable without production
+credentials. `./gradlew test` must execute debug and release unit tests without
+creating or publishing a distributable unsigned release APK.
 
 ## Acceptance
 
