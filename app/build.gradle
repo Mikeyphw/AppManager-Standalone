@@ -139,13 +139,13 @@ android {
 // No release package task may produce an unsigned APK/AAB. This gate does
 // not require production secrets for source checks, lint or debug-only tests.
 gradle.taskGraph.whenReady { graph ->
-    // :app:test uses packageReleaseUnitTestForUnitTest to build a TEST fixture,
-    // not a distributable release APK. Keep that task eligible for CI tests.
-    // Real assemble/package/bundle release artifacts still require signing.
+    // Protect actual distributable release outputs, not internal AGP packaging
+    // tasks needed by test and lint (e.g. packageReleaseResources / Assets).
+    // Groovy ==~ matches the complete name, so build types and product flavors
+    // are covered without treating intermediate release tasks as artifacts.
     boolean releasePackage = graph.allTasks.any { task ->
         task.project == project &&
-            (task.name ==~ /(?i)(assemble|package|bundle).*release.*/) &&
-            !(task.name ==~ /(?i).*(unittest|androidtest).*/)
+            task.name ==~ /(?i)(assemble|package|bundle)[a-z0-9]*release(?:universalapk|apk|aab|bundle)?/
     }
     if (releasePackage && System.getenv('AM_SIGNING_VARIANT') != 'release') {
         throw new GradleException('Unsigned release packaging refused: use protected release-signing workflow')

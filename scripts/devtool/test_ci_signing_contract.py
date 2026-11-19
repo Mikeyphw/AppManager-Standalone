@@ -85,10 +85,7 @@ def inspect(root=ROOT):
     # unrelated test-side approximation. Release tests cannot be mistaken for
     # distributable APKs, and release output tasks must remain fail-closed.
     release_patterns = re.findall(r'task\.name\s*==~\s*/([^/\n]+)/', gradle)
-    expected_patterns = [
-        '(?i)(assemble|package|bundle).*release.*',
-        '(?i).*(unittest|androidtest).*',
-    ]
+    expected_patterns = ['(?i)(assemble|package|bundle)[a-z0-9]*release(?:universalapk|apk|aab|bundle)?']
     if release_patterns != expected_patterns:
         errors.append('release task graph must distinguish signed artifacts from unit-test packaging')
     if "if (releasePackage && System.getenv('AM_SIGNING_VARIANT') != 'release')" not in gradle:
@@ -144,33 +141,56 @@ class SigningSourceContract(unittest.TestCase):
     def test_release_guard_task_classification(self):
         gradle = (ROOT/'app/build.gradle').read_text()
         patterns = re.findall(r'task\.name\s*==~\s*/([^/\n]+)/', gradle)
-        self.assertEqual(['(?i)(assemble|package|bundle).*release.*',
-                          '(?i).*(unittest|androidtest).*'], patterns)
+        self.assertEqual(['(?i)(assemble|package|bundle)[a-z0-9]*release(?:universalapk|apk|aab|bundle)?'], patterns)
         for task, should_gate in (
+            # Distributable APK/AAB targets always need release credentials.
             ('assembleRelease', True),
             ('packageRelease', True),
             ('packageReleaseUniversalApk', True),
+            ('packageReleaseApk', True),
             ('bundleRelease', True),
             ('packageReleaseBundle', True),
+            ('packageProdRelease', True),
+            ('assembleProdRelease', True),
+            ('bundleProdRelease', True),
+            ('packageProdReleaseBundle', True),
+            ('packageProdReleaseUniversalApk', True),
+            # Internal resource/asset/manifest/class tasks aren't APK/AABs.
+            ('packageReleaseResources', False),
+            ('packageReleaseAssets', False),
+            ('packageReleaseManifest', False),
+            ('packageReleaseRenderscript', False),
+            ('packageProdReleaseResources', False),
+            ('bundleReleaseClassesToRuntimeJar', False),
+            ('bundleReleaseResources', False),
+            ('bundleProdReleaseClassesToCompileJar', False),
             ('assembleDebug', False),
             ('packageDebug', False),
             ('testDebugUnitTest', False),
             ('testReleaseUnitTest', False),
             ('packageReleaseUnitTestForUnitTest', False),
             ('packageReleaseAndroidTest', False),
+            ('packageProdReleaseUnitTestForUnitTest', False),
         ):
-            actual = bool(re.fullmatch(patterns[0], task)) and not bool(re.fullmatch(patterns[1], task))
-            self.assertEqual(should_gate, actual, task)
+            self.assertEqual(should_gate, bool(re.fullmatch(patterns[0], task)), task)
 
     def test_cannot_block_release_unit_test_packaging(self):
         self.fixture('app/build.gradle',
-                     '!(task.name ==~ /(?i).*(unittest|androidtest).*/)',
-                     'true')
+                     '(?i)(assemble|package|bundle)[a-z0-9]*release(?:universalapk|apk|aab|bundle)?',
+                     '(?i)(assemble|package|bundle).*release.*')
 
     def test_cannot_allow_unsigned_release_assemble(self):
         self.fixture('app/build.gradle',
-                     '(task.name ==~ /(?i)(assemble|package|bundle).*release.*/)',
-                     '(task.name ==~ /(?i)(assemble|package|bundle).*debug.*/)')
+                     '(?i)(assemble|package|bundle)[a-z0-9]*release(?:universalapk|apk|aab|bundle)?',
+                     '(?i)(assemble|package|bundle)[a-z0-9]*debug(?:universalapk|apk|aab|bundle)?')
+
+    def test_cannot_drop_bundle_release_guard(self):
+        self.fixture('app/build.gradle', '(assemble|package|bundle)', '(assemble|package)')
+
+    def test_cannot_treat_internal_release_resources_as_distributable(self):
+        self.fixture('app/build.gradle',
+                     '(?i)(assemble|package|bundle)[a-z0-9]*release(?:universalapk|apk|aab|bundle)?',
+                     '(?i)(assemble|package|bundle).*release.*')
 
     def test_cannot_remove_required_release_identity_check(self):
         self.fixture('app/build.gradle',
