@@ -286,6 +286,51 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
         return (mFilterFlags & flag) != 0;
     }
 
+    private static final int AMUI03C_QUICK_FLAGS = MainListOptions.FILTER_USER_APPS
+            | MainListOptions.FILTER_SYSTEM_APPS | MainListOptions.FILTER_FROZEN_APPS
+            | MainListOptions.FILTER_APPS_WITH_BACKUPS;
+
+    /** Update one quick-filter atomically; retain every unrelated advanced flag. */
+    public void setQuickFilterFlag(@MainListOptions.Filter int flag, boolean checked) {
+        if (Integer.bitCount(flag) != 1 || (flag & AMUI03C_QUICK_FLAGS) != flag) {
+            throw new IllegalArgumentException("Unsupported quick filter");
+        }
+        int next = checked ? mFilterFlags | flag : mFilterFlags & ~flag;
+        if (checked && flag == MainListOptions.FILTER_USER_APPS) {
+            next &= ~MainListOptions.FILTER_SYSTEM_APPS;
+        } else if (checked && flag == MainListOptions.FILTER_SYSTEM_APPS) {
+            next &= ~MainListOptions.FILTER_USER_APPS;
+        }
+        if (next == mFilterFlags) return;
+        mFilterFlags = next;
+        Prefs.MainPage.setFilters(next);
+        cancelIfRunning();
+        mFilterResult = mListExecutor.submit(this::filterItemsByFlags);
+    }
+
+    /** Clear all list-scope filters, not the user's advanced search query or sort order. */
+    public void clearListFilters() {
+        if (mFilterFlags == MainListOptions.FILTER_NO_FILTER
+                && mFilterProfileName == null && mSelectedUsers == null) return;
+        mFilterFlags = MainListOptions.FILTER_NO_FILTER;
+        mFilterProfileName = null;
+        mSelectedUsers = null;
+        Prefs.MainPage.setFilters(mFilterFlags);
+        Prefs.MainPage.setFilteredProfileName(null);
+        cancelIfRunning();
+        mFilterResult = mListExecutor.submit(this::filterItemsByFlags);
+    }
+
+    public boolean hasActiveListFilters() {
+        return mFilterFlags != MainListOptions.FILTER_NO_FILTER
+                || mFilterProfileName != null || mSelectedUsers != null;
+    }
+
+    public boolean hasAdvancedListFilters() {
+        return (mFilterFlags & ~AMUI03C_QUICK_FLAGS) != 0
+                || mFilterProfileName != null || mSelectedUsers != null;
+    }
+
     @Override
     public void addFilterFlag(@MainListOptions.Filter int filterFlag) {
         mFilterFlags |= filterFlag;
@@ -453,8 +498,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     }
 
     @WorkerThread
-    private void publishVisibleItems(@NonNull List<ApplicationItem> items) {
-        long epoch = mListEpoch.get();
+    private void publishVisibleItems(@NonNull List<ApplicationItem> items, long filterEpoch) {
+        // The epoch belongs to the filter task, not the eventual publisher.
+        final long epoch = filterEpoch;
         ArrayList<ApplicationItem> snapshot = new ArrayList<>(items.size());
         for (ApplicationItem item : items) snapshot.add(item.snapshotForList());
         AppListSyncStatus complete = mPendingCompletion;
@@ -484,7 +530,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
     }
 
     @WorkerThread
-    private void filterItemsByQuery(@NonNull List<ApplicationItem> applicationItems) {
+    private void filterItemsByQuery(@NonNull List<ApplicationItem> applicationItems, long filterEpoch) {
         List<ApplicationItem> filteredApplicationItems;
         if (mSearchType == AdvancedSearchView.SEARCH_TYPE_REGEX) {
             filteredApplicationItems = AdvancedSearchView.matches(mSearchQuery, applicationItems,
@@ -492,7 +538,7 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                         add(item.packageName);
                         add(item.label);
                     }}, AdvancedSearchView.SEARCH_TYPE_REGEX);
-            publishVisibleItems(filteredApplicationItems);
+            publishVisibleItems(filteredApplicationItems, filterEpoch);
             return;
         }
         // Others
@@ -511,12 +557,14 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                 filteredApplicationItems.add(item);
             }
         }
-        publishVisibleItems(filteredApplicationItems);
+        publishVisibleItems(filteredApplicationItems, filterEpoch);
     }
 
     @WorkerThread
     @GuardedBy("applicationItems")
     private void filterItemsByFlags() {
+        // Capture before reading any filter input. A newer UI change invalidates this snapshot.
+        final long filterEpoch = mListEpoch.get();
         synchronized (mApplicationItems) {
             List<ApplicationItem> candidateApplicationItems = new ArrayList<>();
             FilterItem profileFilterItem = null;
@@ -550,9 +598,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
             // Other filters
             if (profileFilterItem == null && mFilterFlags == MainListOptions.FILTER_NO_FILTER) {
                 if (!TextUtils.isEmpty(mSearchQuery)) {
-                    filterItemsByQuery(candidateApplicationItems);
+                    filterItemsByQuery(candidateApplicationItems, filterEpoch);
                 } else {
-                    publishVisibleItems(candidateApplicationItems);
+                    publishVisibleItems(candidateApplicationItems, filterEpoch);
                 }
             } else {
                 List<ApplicationItem> filteredApplicationItems = new ArrayList<>();
@@ -616,9 +664,9 @@ public class MainViewModel extends AndroidViewModel implements ListOptions.ListO
                     filteredApplicationItems.add(item);
                 }
                 if (!TextUtils.isEmpty(mSearchQuery)) {
-                    filterItemsByQuery(filteredApplicationItems);
+                    filterItemsByQuery(filteredApplicationItems, filterEpoch);
                 } else {
-                    publishVisibleItems(filteredApplicationItems);
+                    publishVisibleItems(filteredApplicationItems, filterEpoch);
                 }
             }
         }
