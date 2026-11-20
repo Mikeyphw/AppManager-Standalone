@@ -18,7 +18,7 @@ class CompactListContracts(unittest.TestCase):
     def test_no_long_click(self):self.reject(ADAPTER,'cardView.setOnLongClickListener(','// deleted long click')
     def test_no_icon_selection(self):self.reject(ADAPTER,'holder.icon.setOnClickListener(','// icon selection lost')
     def test_no_selection_state(self):self.reject(ADAPTER,'toggleSelection(currentPos);','// lost one selection path')
-    def test_no_app_details(self):self.reject(ADAPTER,'handleClick(item);','// removed')
+    def test_no_app_details(self):self.reject(ADAPTER,'handleClick(getItem(currentPos));','// removed')
     def test_no_selection_stroke(self):self.reject(ADAPTER,'cardView.setStrokeColor(','// removed one stroke branch')
     def test_no_selection_guard(self):self.reject(ADAPTER,'if (!item.isInstalled)','if (false)')
     def test_no_disabled_guard(self):self.reject(ADAPTER,'else if (item.isDisabled)','else if (false)')
